@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme P2I - UPJV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+        
+        :root {
+            --upjv-blue: #002E5A;
+            --upjv-orange: #fe740e;
+            --upjv-blue-light: #2d5a8e;
+            --upjv-danger: #ff3131;
+            --upjv-info-bg: #dbeafe;
+            --upjv-success: #d1fae5;
+            --upjv-neutral-bg: #f1f3f8;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px; /* Brand guideline: Texte courant 11px */
+            background-color: var(--upjv-neutral-bg);
+        }
+
+        h1, h2, h3, .brand-title {
+            font-weight: 700;
+            font-size: 20px; /* Brand guideline: Titres principaux 20px */
+        }
+
+        .subtitle {
+            font-style: italic;
+            font-size: 8px; /* Brand guideline: Sous-titres 8px */
+        }
+
+        /* Custom scrollbar to match theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #002E5A;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2d5a8e;
+        }
+
+        /* Applying organic rounded corners to common elements */
+        .rounded-brand {
+            border-radius: 12px;
+        }
+        
+        .btn-brand-primary {
+            background-color: var(--upjv-blue);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-brand-primary:hover {
+            background-color: var(--upjv-blue-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-brand-action {
+            background-color: var(--upjv-orange);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-brand-action:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="text-gray-900">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
