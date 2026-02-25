@@ -1,1 +1,1 @@
-console.log("Hello, Git!");
+console.log("version 1.0.0");
