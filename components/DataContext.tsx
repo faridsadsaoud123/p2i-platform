@@ -41,9 +41,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       status: 'CREEE',
       managerId: 'u1', // Default manager
       priority: request.priority,
-      pfiCode: 'PFI-NEW', // A remplir
-      eotpCode: '',
-      nacresCode: '',
+      pfiCode: `PFI-${Math.floor(1000 + Math.random() * 9000)}`, // Generated unique PFI
+      eotpCodes: [],
+      nacresCodes: [],
       aeOpen: request.estimatedCost,
       aeEngaged: 0,
       cpForecast: request.estimatedCost,

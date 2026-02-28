@@ -70,7 +70,7 @@ export const MOCK_REQUESTS: RequestItem[] = [
 ];
 
 export const MOCK_OPERATIONS: Operation[] = [
-  { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, estimationInitial: 150000, startDate: '2024-03-01', endDate: '2024-12-31' }
+  { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', nacresCodes: ['NAC-01'], eotpCodes: ['EOTP-2024-A1'], aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, estimationInitial: 150000, startDate: '2024-03-01', endDate: '2024-12-31' }
 ];
 
 export const MOCK_COFINANCEURS: Cofinanceur[] = [

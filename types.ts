@@ -45,8 +45,8 @@ export interface Operation {
   managerId: string;
   priority: Priority;
   pfiCode: string;
-  nacresCode?: string;
-  eotpCode?: string;
+  nacresCodes?: string[];
+  eotpCodes?: string[];
   aeOpen: number;
   aeEngaged: number;
   cpForecast: number;
