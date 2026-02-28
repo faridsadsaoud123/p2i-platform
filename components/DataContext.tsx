@@ -41,11 +41,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       status: 'CREEE',
       managerId: 'u1', // Default manager
       priority: request.priority,
-      pfiCode: 'PFI-NEW', // Missing info to be filled
+      pfiCode: 'PFI-NEW', // A remplir
+      eotpCode: '',
+      nacresCode: '',
       aeOpen: request.estimatedCost,
       aeEngaged: 0,
       cpForecast: request.estimatedCost,
       cpPaid: 0,
+      estimationInitial: request.estimatedCost,
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
       history: [
@@ -59,7 +62,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     setOperations(prev => [newOperation, ...prev]);
-    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'VALIDE', operationId: newOpId } : r));
+    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'VALIDE', operationId: newOpId, date_validation: new Date().toISOString().split('T')[0] } : r));
 
     return newOpId;
   };

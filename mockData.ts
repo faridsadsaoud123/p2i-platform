@@ -1,4 +1,3 @@
-
 import { User, RequestItem, Operation, Cofinanceur, OperationCofinanceur, Convention, FinancialEstimationVersion, EFPVersion, Prestataire } from './types';
 
 export const MOCK_PRESTATAIRES: Prestataire[] = [
@@ -64,14 +63,14 @@ export const MOCK_USERS: User[] = [
 ];
 
 export const MOCK_REQUESTS: RequestItem[] = [
-  { id: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Infiltrations constatées.', site: 'Campus Centre', building: 'Bâtiment 1', type: 'TRAVAUX', estimatedCost: 150000, priority: 'P1', status: 'VALIDE', createdAt: '2024-01-10', creatorId: 'u3', operationId: 'OP-24-001' },
+  { id: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Infiltrations constatées.', site: 'Campus Centre', building: 'Bâtiment 1', type: 'TRAVAUX', estimatedCost: 150000, priority: 'P1', status: 'VALIDE', createdAt: '2024-01-10', date_validation: '2024-02-28', creatorId: 'u3', operationId: 'OP-24-001' },
   { id: 'REQ-2024-002', title: 'Mise aux normes ascenseurs', description: 'Sécurité réglementaire.', site: 'Campus Nord', building: 'Bâtiment L', type: 'SECURITE', estimatedCost: 45000, priority: 'P2', status: 'EN_ATTENTE', createdAt: '2024-02-15', creatorId: 'u3' },
   { id: 'REQ-2024-003', title: 'Peinture Hall Accueil', description: 'Besoin de rafraîchissement esthétique.', site: 'Campus Centre', building: 'Bâtiment A', type: 'MAINTENANCE', estimatedCost: 5000, priority: 'P4', status: 'PRECISION', createdAt: '2024-03-10', creatorId: 'u3', clarificationRequest: 'Merci de fournir un devis comparatif pour le type de peinture souhaité.' },
   { id: 'REQ-2024-004', title: 'Contrôle Accès Labo', description: 'Nouveau système badge.', site: 'Pôle Cathédrale', building: 'Labo Bio', type: 'SECURITE', estimatedCost: 12000, priority: 'P3', status: 'BROUILLON', createdAt: '2024-05-01', creatorId: 'u3' }
 ];
 
 export const MOCK_OPERATIONS: Operation[] = [
-  { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, startDate: '2024-03-01', endDate: '2024-12-31' }
+  { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, estimationInitial: 150000, startDate: '2024-03-01', endDate: '2024-12-31' }
 ];
 
 export const MOCK_COFINANCEURS: Cofinanceur[] = [

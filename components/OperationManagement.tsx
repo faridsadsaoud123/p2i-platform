@@ -194,6 +194,36 @@ const OperationManagement: React.FC = () => {
                           />
                         </div>
                         <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Code EOTP</label>
+                          <input
+                            type="text"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.eotpCode || ''}
+                            onChange={(e) => setOpFormData({...opFormData, eotpCode: e.target.value})}
+                            placeholder="Code EOTP..."
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Code NACRES</label>
+                          <input
+                            type="text"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.nacresCode || ''}
+                            onChange={(e) => setOpFormData({...opFormData, nacresCode: e.target.value})}
+                            placeholder="Code NACRES..."
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Estimation Initiale (€)</label>
+                          <input
+                            type="number"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.estimationInitial || ''}
+                            onChange={(e) => setOpFormData({...opFormData, estimationInitial: Number(e.target.value)})}
+                            placeholder="Montant HT..."
+                          />
+                        </div>
+                        <div>
                           <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Manager / Référent</label>
                           <select
                             className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
@@ -221,6 +251,15 @@ const OperationManagement: React.FC = () => {
                             className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
                             value={opFormData.endDate || ''}
                             onChange={(e) => setOpFormData({...opFormData, endDate: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Date Clôture Réelle</label>
+                          <input
+                            type="date"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.dateClotureReelle || ''}
+                            onChange={(e) => setOpFormData({...opFormData, dateClotureReelle: e.target.value})}
                           />
                         </div>
                       </div>
