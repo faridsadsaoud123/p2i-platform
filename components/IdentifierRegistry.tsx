@@ -29,10 +29,9 @@ const IdentifierRegistry: React.FC = () => {
     return ids;
   });
 
-  const filteredIds = allIdentifiers.filter(id => 
+  const filteredIds = allIdentifiers.filter(id =>
     id.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    id.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    id.opTitle.toLowerCase().includes(searchTerm.toLowerCase())
+    id.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -72,7 +71,6 @@ const IdentifierRegistry: React.FC = () => {
               <tr>
                 <th className="px-10 py-6">Code / Identifiant</th>
                 <th className="px-10 py-6">Type Code</th>
-                <th className="px-10 py-6">Opération Associée</th>
                 <th className="px-10 py-6 text-right">Navigation</th>
               </tr>
             </thead>
@@ -93,10 +91,6 @@ const IdentifierRegistry: React.FC = () => {
                         {id.type}
                     </span>
                   </td>
-                  <td className="px-10 py-6">
-                    <div className="text-xs font-bold text-[#2d5a8e] truncate max-w-[300px]">{id.opTitle}</div>
-                    <div className="text-[9px] text-gray-400 font-bold uppercase mt-1">{id.opId}</div>
-                  </td>
                   <td className="px-10 py-6 text-right">
                     <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#002E5A] group-hover:text-white transition-all ml-auto shadow-sm">
                         <i className="fas fa-chevron-right text-xs"></i>
@@ -106,7 +100,7 @@ const IdentifierRegistry: React.FC = () => {
               ))}
               {filteredIds.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-10 py-20 text-center opacity-30">
+                  <td colSpan={3} className="px-10 py-20 text-center opacity-30">
                     <i className="fas fa-fingerprint text-5xl mb-4 block"></i>
                     <p className="text-sm font-black uppercase tracking-widest">Aucun identifiant trouvé</p>
                   </td>
