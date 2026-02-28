@@ -1,5 +1,53 @@
 
-import { User, RequestItem, Operation, Cofinancer, Convention } from './types';
+import { User, RequestItem, Operation, Cofinanceur, OperationCofinanceur, Convention, FinancialEstimationVersion, EFPVersion, Prestataire } from './types';
+
+export const MOCK_PRESTATAIRES: Prestataire[] = [
+  {
+    id: 'PRES-001',
+    nom: 'Bati-Expert Picardie',
+    siret: '12345678901234',
+    adresse: '12 rue des Maçons',
+    ville: 'Amiens',
+    codePostal: '80000',
+    contactNom: 'Jean Bâtisseur',
+    contactEmail: 'jean@bati-expert.fr',
+    contactTel: '03 22 11 22 33',
+    specialite: 'Gros Œuvre',
+    statut: 'ACTIF',
+    note: 4.5,
+    createdAt: '2023-01-10'
+  },
+  {
+    id: 'PRES-002',
+    nom: 'Elec-Service 80',
+    siret: '98765432109876',
+    adresse: '45 avenue de la Lumière',
+    ville: 'Longueau',
+    codePostal: '80330',
+    contactNom: 'Sophie Volt',
+    contactEmail: 'sophie@elec80.fr',
+    contactTel: '03 22 44 55 66',
+    specialite: 'Électricité',
+    statut: 'ACTIF',
+    note: 4.8,
+    createdAt: '2023-05-15'
+  },
+  {
+    id: 'PRES-003',
+    nom: 'Peinture & Déco',
+    siret: '55566677788899',
+    adresse: '8 rue des Couleurs',
+    ville: 'Amiens',
+    codePostal: '80080',
+    contactNom: 'Marc Palette',
+    contactEmail: 'marc@peinture-deco.fr',
+    contactTel: '03 22 77 88 99',
+    specialite: 'Peinture',
+    statut: 'INACTIF',
+    note: 3.2,
+    createdAt: '2023-11-20'
+  }
+];
 
 export const MOCK_ROLES = [
   { id: 'r1', name: 'ADMIN', description: 'Accès total au système et gestion des utilisateurs.', protected: true },
@@ -26,24 +74,89 @@ export const MOCK_OPERATIONS: Operation[] = [
   { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, startDate: '2024-03-01', endDate: '2024-12-31' }
 ];
 
-export const MOCK_COFINANCERS: Cofinancer[] = [
-  { id: 'COF-1', operationId: 'OP-24-001', name: 'Région Hauts-de-France', type: 'REGION', plannedAmount: 50000, grantedAmount: 45000, receivedAmount: 15000 },
-  { id: 'COF-2', operationId: 'OP-24-001', name: 'Plan de Relance État', type: 'ETAT', plannedAmount: 30000, grantedAmount: 30000, receivedAmount: 0 }
+export const MOCK_COFINANCEURS: Cofinanceur[] = [
+  { id: 'COF-1', nom: 'Région Hauts-de-France', type: 'REGION', actif: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+  { id: 'COF-2', nom: 'Plan de Relance État', type: 'ETAT', actif: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+  { id: 'COF-3', nom: 'Amiens Métropole', type: 'METROPOLE', actif: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+];
+
+export const MOCK_OPERATION_COFINANCEURS: OperationCofinanceur[] = [
+  { id: 'OC-1', operationId: 'OP-24-001', cofinanceurId: 'COF-1', montantPrevu: 50000, montantAccorde: 45000, montantRecu: 15000, statut: 'ACCORDE' },
+  { id: 'OC-2', operationId: 'OP-24-001', cofinanceurId: 'COF-2', montantPrevu: 30000, montantAccorde: 30000, montantRecu: 0, statut: 'ACCORDE' }
 ];
 
 export const MOCK_CONVENTIONS: Convention[] = [
-  { id: 'CONV-1', cofinancerId: 'COF-1', operationId: 'OP-24-001', ref: '2024-REG-TRAV-01', amount: 45000, executionDeadline: '2024-12-31', justificationDeadline: '2025-06-30' }
+  { id: 'CONV-1', operationCofinanceurId: 'OC-1', operationId: 'OP-24-001', ref: '2024-REG-TRAV-01', amount: 45000, executionDeadline: '2024-12-31', justificationDeadline: '2025-06-30' }
 ];
 
-export const MOCK_FINANCIAL_VERSIONS = [
-  { id: 'v1', opId: 'OP-24-001', name: 'Estimation Initiale', date: '2024-01-15', author: 'Paul C.', status: 'VALIDÉ', total: 135000 },
-  { id: 'v2', opId: 'OP-24-001', name: 'Recalage Études Mars', date: '2024-03-10', author: 'Paul C.', status: 'VALIDÉ', total: 150000 }
+export const MOCK_FINANCIAL_VERSIONS: FinancialEstimationVersion[] = [
+  { 
+    id: 'v1', 
+    opId: 'OP-24-001', 
+    versionNumber: 1,
+    name: 'Estimation Initiale', 
+    date: '2024-01-15', 
+    author: 'Paul C.', 
+    status: 'VALIDÉ', 
+    total: 135000,
+    lines: [
+        { year: 2024, nature: 'Études', amount: 25000 },
+        { year: 2024, nature: 'Travaux', amount: 100000 },
+        { year: 2024, nature: 'Contrôles', amount: 10000 },
+    ]
+  },
+  { 
+    id: 'v2', 
+    opId: 'OP-24-001', 
+    versionNumber: 2,
+    name: 'Recalage Études Mars', 
+    date: '2024-03-10', 
+    author: 'Paul C.', 
+    status: 'VALIDÉ', 
+    total: 150000,
+    comment: 'Mise à jour suite au passage en CODIR - Ajustement du poste Travaux après consultation des entreprises.',
+    lines: [
+        { year: 2024, nature: 'Études', amount: 25000 },
+        { year: 2024, nature: 'Travaux', amount: 110000 },
+        { year: 2024, nature: 'Contrôles', amount: 15000 },
+    ]
+  }
 ];
 
-export const MOCK_EFP_POSTS = [
-  { nature: 'Ingénierie & Études', amount: 25000, yearBreakdown: { 2024: 25000 }, color: 'bg-blue-500' },
-  { nature: 'Travaux', amount: 110000, yearBreakdown: { 2024: 100000, 2025: 10000 }, color: 'bg-[#fe740e]' },
-  { nature: 'Contrôles', amount: 15000, yearBreakdown: { 2024: 15000 }, color: 'bg-emerald-500' }
+export const MOCK_EFP_VERSIONS: EFPVersion[] = [
+  {
+    id: 'efp-v1',
+    opId: 'OP-24-001',
+    versionNumber: 1,
+    date: '2024-01-20',
+    author: 'Paul C.',
+    status: 'VALIDÉ',
+    total: 135000,
+    posts: [
+      { nature: 'Études', amount: 25000, yearBreakdown: { 2024: 25000 }, color: 'bg-blue-500' },
+      { nature: 'MOE', amount: 0, yearBreakdown: {}, color: 'bg-indigo-500' },
+      { nature: 'Travaux', amount: 100000, yearBreakdown: { 2024: 100000 }, color: 'bg-[#fe740e]' },
+      { nature: 'Contrôles', amount: 10000, yearBreakdown: { 2024: 10000 }, color: 'bg-emerald-500' },
+      { nature: 'Divers', amount: 0, yearBreakdown: {}, color: 'bg-gray-500' }
+    ]
+  },
+  {
+    id: 'efp-v2',
+    opId: 'OP-24-001',
+    versionNumber: 2,
+    date: '2024-03-15',
+    author: 'Paul C.',
+    status: 'VALIDÉ',
+    total: 150000,
+    comment: 'Recalage après réception des devis définitifs.',
+    posts: [
+      { nature: 'Études', amount: 25000, yearBreakdown: { 2024: 25000 }, color: 'bg-blue-500' },
+      { nature: 'MOE', amount: 0, yearBreakdown: {}, color: 'bg-indigo-500' },
+      { nature: 'Travaux', amount: 110000, yearBreakdown: { 2024: 100000, 2025: 10000 }, color: 'bg-[#fe740e]' },
+      { nature: 'Contrôles', amount: 15000, yearBreakdown: { 2024: 15000 }, color: 'bg-emerald-500' },
+      { nature: 'Divers', amount: 0, yearBreakdown: {}, color: 'bg-gray-500' }
+    ]
+  }
 ];
 
 export const MOCK_SIFAC_ANOMALIES = [
