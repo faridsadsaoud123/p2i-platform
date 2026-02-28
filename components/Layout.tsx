@@ -13,7 +13,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/', label: 'Tableau de bord', icon: 'fa-th-large' },
     { path: '/requests', label: 'Recensement', icon: 'fa-clipboard-list' },
     { path: '/operations', label: 'Opérations P2I', icon: 'fa-project-diagram' },
-    { path: '/identifiers', label: 'Référentiel Identifiants', icon: 'fa-fingerprint' },
     { path: '/finance', label: 'Finance & SIFAC', icon: 'fa-coins' },
     { path: '/planning', label: 'Planning & Trésorerie', icon: 'fa-calendar-alt' },
     { path: '/cofinanceurs', label: 'Cofinanceurs', icon: 'fa-landmark' },
