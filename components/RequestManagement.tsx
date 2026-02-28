@@ -84,15 +84,28 @@ const RequestManagement: React.FC = () => {
       return;
     }
 
+    if (arbitrationAction === 'VALIDATE') {
+      const opId = transformRequestToOperation(selectedRequest.id, arbitrationComment);
+      if (opId) {
+        showNotification('Demande validée et transformée en opération ! Redirection...', 'success');
+        setSelectedRequest(null);
+        setArbitrationAction(null);
+        setArbitrationComment('');
+        setTimeout(() => {
+          navigate('/operations', { state: { selectedOpId: opId } });
+        }, 1000);
+        return;
+      }
+    }
+
     const updated = requests.map(r => {
       if (r.id === selectedRequest.id) {
         let newStatus = r.status;
-        if (arbitrationAction === 'VALIDATE') newStatus = 'VALIDE';
         if (arbitrationAction === 'REJECT') newStatus = 'REJETE';
         if (arbitrationAction === 'CLARIFY') newStatus = 'PRECISION';
 
-        return { 
-          ...r, 
+        return {
+          ...r,
           status: newStatus,
           rejectionReason: arbitrationAction === 'REJECT' ? arbitrationComment : r.rejectionReason,
           clarificationRequest: arbitrationAction === 'CLARIFY' ? arbitrationComment : r.clarificationRequest

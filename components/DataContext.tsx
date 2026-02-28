@@ -26,12 +26,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setOperations(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
   };
 
-  const transformRequestToOperation = (requestId: string): string | null => {
+  const transformRequestToOperation = (requestId: string, comment?: string): string | null => {
     const request = requests.find(r => r.id === requestId);
-    if (!request || request.status !== 'VALIDE' || request.operationId) return null;
+    if (!request || (request.status !== 'VALIDE' && request.status !== 'EN_ATTENTE') || request.operationId) return null;
 
     const newOpId = `OP-${new Date().getFullYear().toString().slice(-2)}-${(operations.length + 1).toString().padStart(3, '0')}`;
-    
+
     const newOperation: Operation = {
       id: newOpId,
       requestId: request.id,
@@ -53,13 +53,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           date: new Date().toLocaleDateString('fr-FR'),
           user: 'Système',
           title: 'Opération Créée',
-          desc: `Transformation automatique depuis la demande ${request.id}.`
+          desc: comment ? `Validée avec commentaire: "${comment}"` : `Transformation automatique depuis la demande ${request.id}.`
         }
       ]
     };
 
     setOperations(prev => [newOperation, ...prev]);
-    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, operationId: newOpId } : r));
+    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'VALIDE', operationId: newOpId } : r));
 
     return newOpId;
   };
