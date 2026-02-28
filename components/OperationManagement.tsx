@@ -13,6 +13,7 @@ const OperationManagement: React.FC = () => {
   const navigate = useNavigate();
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'MARKETS' | 'COFINANCERS' | 'CONVENTIONS'>('CYCLE');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Edit mode for operation basic info
   const [isEditingOp, setIsEditingOp] = useState(false);
@@ -103,14 +104,23 @@ const OperationManagement: React.FC = () => {
             >
                 <i className="fas fa-fingerprint mr-2"></i> Référentiel Identifiants
             </button>
-            <button className="bg-white border border-gray-200 text-[#002E5A] px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-gray-50 transition-all uppercase tracking-widest">
-                <i className="fas fa-search mr-2 text-[#fe740e]"></i> Recherche multicritères
-            </button>
+            <input
+              type="text"
+              placeholder="Rechercher une opération..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-white border border-gray-200 text-[#002E5A] px-4 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50 transition-all outline-none focus:ring-2 focus:ring-[#002E5A]"
+            />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {operations.map((op) => (
+        {operations.filter(op => 
+          op.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          op.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          op.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          op.site.toLowerCase().includes(searchTerm.toLowerCase())
+        ).map((op) => (
           <div key={op.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
             <div className="flex flex-col lg:flex-row">
                <div className="lg:w-80 bg-[#f1f3f8]/50 p-8 border-r border-gray-100 flex flex-col">

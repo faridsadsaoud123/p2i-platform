@@ -6,6 +6,7 @@ import { Operation } from '../types';
 const PlanningView: React.FC = () => {
   const dataContext = useContext(DataContext);
   const [selectedOperation, setSelectedOperation] = useState<Operation | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   
   if (!dataContext) {
     return <div>Erreur: Contexte de données non disponible</div>;
