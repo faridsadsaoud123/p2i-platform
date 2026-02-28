@@ -1,4 +1,3 @@
-
 export type UserRole = 'ADMIN' | 'DIRECTION' | 'CHEF_SERVICE' | 'CHARGE_OPERATION' | 'DEMANDEUR';
 
 export interface User {
@@ -53,6 +52,7 @@ export interface Operation {
   cpPaid: number;
   startDate: string;
   endDate: string;
+  history?: { date: string; user: string; title: string; desc: string }[];
 }
 
 export type CofinanceurType = 'ETAT' | 'REGION' | 'METROPOLE' | 'AUTRE';

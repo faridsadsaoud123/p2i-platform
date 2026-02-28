@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
-import { MOCK_REQUESTS } from '../mockData';
+import { useNavigate } from 'react-router-dom';
+import { useData } from './DataContext';
 import { STATUS_COLORS, PRIORITY_COLORS } from '../constants';
 import { RequestItem, RequestStatus, Priority } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import { useNotification } from './NotificationSystem';
 
 const RequestManagement: React.FC = () => {
-  const [requests, setRequests] = useState<RequestItem[]>(MOCK_REQUESTS);
+  const { requests, setRequests, transformRequestToOperation } = useData();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -404,7 +405,18 @@ const RequestManagement: React.FC = () => {
                     )}
 
                     {selectedRequest.status === 'VALIDE' && !selectedRequest.operationId && (
-                       <button className="w-full bg-[#fe740e] text-white font-black text-[10px] py-5 rounded-2xl uppercase tracking-widest shadow-xl hover:brightness-110 transition animate-bounce">
+                       <button
+                        onClick={() => {
+                          const opId = transformRequestToOperation(selectedRequest.id);
+                          if (opId) {
+                            showNotification('Demande transformée en opération ! Redirection...', 'success');
+                            setTimeout(() => {
+                              navigate('/operations', { state: { selectedOpId: opId } });
+                            }, 1500);
+                          }
+                        }}
+                        className="w-full bg-[#fe740e] text-white font-black text-[10px] py-5 rounded-2xl uppercase tracking-widest shadow-xl hover:brightness-110 transition animate-bounce"
+                       >
                           Transformer en Opération <i className="fas fa-magic ml-2"></i>
                        </button>
                     )}

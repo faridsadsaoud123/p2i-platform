@@ -1,26 +1,56 @@
-
-import React, { useState } from 'react';
-import { MOCK_OPERATIONS, MOCK_MARKETS, MOCK_COFINANCEURS, MOCK_OPERATION_COFINANCEURS, MOCK_CONVENTIONS, MarketItem } from '../mockData';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useData } from './DataContext';
+import { MOCK_MARKETS, MOCK_COFINANCEURS, MOCK_OPERATION_COFINANCEURS, MOCK_CONVENTIONS, MarketItem } from '../mockData';
 import { STATUS_COLORS, PRIORITY_COLORS } from '../constants';
-import { Cofinanceur, OperationCofinanceur, Convention } from '../types';
+import { Operation, Cofinanceur, OperationCofinanceur, Convention } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import { useNotification } from './NotificationSystem';
 
 const OperationManagement: React.FC = () => {
+  const { operations, updateOperation } = useData();
+  const location = useLocation();
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'MARKETS' | 'COFINANCERS' | 'CONVENTIONS'>('CYCLE');
+
+  // Edit mode for operation basic info
+  const [isEditingOp, setIsEditingOp] = useState(false);
+  const [opFormData, setOpFormData] = useState<Partial<Operation>>({});
+
   const [showMarketModal, setShowMarketModal] = useState(false);
   const [editingMarket, setEditingMarket] = useState<MarketItem | null>(null);
-  
+
   // Cofinancement state
   const [showAddCofinanceur, setShowAddCofinanceur] = useState(false);
   const [selectedCofinanceurId, setSelectedCofinanceurId] = useState('');
   const [cofinanceurAmounts, setCofinanceurAmounts] = useState({ prevu: 0, accorde: 0, recu: 0 });
   const [deleteCofId, setDeleteCofId] = useState<string | null>(null);
-  
+
   const { showNotification } = useNotification();
 
-  const selectedOp = MOCK_OPERATIONS.find(o => o.id === selectedOpId);
+  useEffect(() => {
+    if (location.state && (location.state as any).selectedOpId) {
+      const opId = (location.state as any).selectedOpId;
+      setSelectedOpId(opId);
+      // Auto-trigger edit mode if it's a new operation (pfiCode is 'PFI-NEW')
+      const op = operations.find(o => o.id === opId);
+      if (op && op.pfiCode === 'PFI-NEW') {
+        setOpFormData(op);
+        setIsEditingOp(true);
+        showNotification('Veuillez compléter les informations manquantes de l\'opération.', 'info');
+      }
+    }
+  }, [location.state, operations]);
+
+  const selectedOp = operations.find(o => o.id === selectedOpId);
+
+  const handleSaveOpInfo = () => {
+    if (selectedOpId && opFormData) {
+      updateOperation(selectedOpId, opFormData);
+      setIsEditingOp(false);
+      showNotification('Informations de l\'opération mises à jour.');
+    }
+  };
 
   const checkConventionAlert = (deadline: string) => {
     const days = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -71,7 +101,7 @@ const OperationManagement: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {MOCK_OPERATIONS.map((op) => (
+        {operations.map((op) => (
           <div key={op.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
             <div className="flex flex-col lg:flex-row">
                <div className="lg:w-80 bg-[#f1f3f8]/50 p-8 border-r border-gray-100 flex flex-col">
@@ -123,14 +153,85 @@ const OperationManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 flex justify-end p-0 bg-[#002E5A]/40 backdrop-blur-sm transition-opacity duration-300">
           <div className="bg-white w-full max-w-5xl h-full shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
             <div className="p-8 bg-[#002E5A] text-white flex justify-between items-start shrink-0">
-               <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-[10px] bg-[#fe740e] text-white px-3 py-1 rounded-lg font-bold uppercase tracking-widest">{selectedOp.id}</span>
-                    <h2 className="text-xl font-bold uppercase">{selectedOp.title}</h2>
-                  </div>
-                  <p className="subtitle text-blue-200 uppercase tracking-widest italic">{selectedOp.pfiCode} • {selectedOp.site}</p>
+               <div className="flex-1 mr-4">
+                  {!isEditingOp ? (
+                    <>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-[10px] bg-[#fe740e] text-white px-3 py-1 rounded-lg font-bold uppercase tracking-widest">{selectedOp.id}</span>
+                        <h2 className="text-xl font-bold uppercase">{selectedOp.title}</h2>
+                        <button
+                          onClick={() => {
+                            setOpFormData(selectedOp);
+                            setIsEditingOp(true);
+                          }}
+                          className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg font-bold uppercase ml-2 transition"
+                        >
+                          <i className="fas fa-pencil-alt mr-1"></i> Modifier
+                        </button>
+                      </div>
+                      <p className="subtitle text-blue-200 uppercase tracking-widest italic">{selectedOp.pfiCode} • {selectedOp.site}</p>
+                    </>
+                  ) : (
+                    <div className="space-y-4 max-w-2xl bg-white/5 p-6 rounded-2xl border border-white/10">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Titre de l'Opération</label>
+                          <input
+                            type="text"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.title || ''}
+                            onChange={(e) => setOpFormData({...opFormData, title: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Code PFI (SIFAC)</label>
+                          <input
+                            type="text"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.pfiCode || ''}
+                            onChange={(e) => setOpFormData({...opFormData, pfiCode: e.target.value})}
+                            placeholder="Ex: PFI-24-..."
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Manager / Référent</label>
+                          <select
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.managerId || ''}
+                            onChange={(e) => setOpFormData({...opFormData, managerId: e.target.value})}
+                          >
+                            <option value="u1">Paul C. (Charge d'Opé)</option>
+                            <option value="u2">Marie D. (Dir. Patrimoine)</option>
+                            <option value="u3">Farid S. (Admin)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Date Début</label>
+                          <input
+                            type="date"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.startDate || ''}
+                            onChange={(e) => setOpFormData({...opFormData, startDate: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Date Fin (Prévis.)</label>
+                          <input
+                            type="date"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.endDate || ''}
+                            onChange={(e) => setOpFormData({...opFormData, endDate: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                         <button onClick={() => setIsEditingOp(false)} className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] py-3 rounded-xl uppercase">Annuler</button>
+                         <button onClick={handleSaveOpInfo} className="flex-1 bg-[#fe740e] text-white font-bold text-[9px] py-3 rounded-xl uppercase tracking-widest shadow-lg">Enregistrer</button>
+                      </div>
+                    </div>
+                  )}
                </div>
-               <button onClick={() => setSelectedOpId(null)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"><i className="fas fa-times"></i></button>
+               <button onClick={() => { setSelectedOpId(null); setIsEditingOp(false); }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"><i className="fas fa-times"></i></button>
             </div>
 
             <div className="flex border-b border-gray-100 bg-[#f1f3f8]/30 px-8 shrink-0">
@@ -150,11 +251,11 @@ const OperationManagement: React.FC = () => {
                {activeDetailTab === 'CYCLE' && (
                   <section className="animate-in fade-in duration-300">
                      <div className="relative pl-12 border-l-2 border-gray-100 space-y-12">
-                        {[
+                        {(selectedOp.history || [
                           { date: '10/04/2024', user: 'Paul C.', title: 'Passage en Exécution', desc: 'Notification des marchés et validation AE.' },
                           { date: '15/03/2024', user: 'Paul C.', title: 'Saisie de l\'EFP v1', desc: 'Définition des postes de dépense initiaux.' },
                           { date: '01/03/2024', user: 'Système', title: 'Opération Créée', desc: 'Transformation depuis REQ-2024-001.' },
-                        ].map((h, i) => (
+                        ]).map((h, i) => (
                            <div key={i} className="relative">
                               <div className="absolute -left-[57px] top-0 w-4 h-4 rounded-full bg-white border-4 border-[#002E5A] shadow-sm"></div>
                               <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
