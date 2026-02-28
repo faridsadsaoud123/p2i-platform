@@ -55,23 +55,88 @@ export interface Operation {
   endDate: string;
 }
 
-export interface Cofinancer {
+export type CofinanceurType = 'ETAT' | 'REGION' | 'METROPOLE' | 'AUTRE';
+
+export interface Cofinanceur {
+  id: string;
+  nom: string;
+  type: CofinanceurType;
+  actif: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OperationCofinanceur {
   id: string;
   operationId: string;
-  name: string;
-  type: 'ETAT' | 'REGION' | 'METROPOLE' | 'AUTRE';
-  plannedAmount: number;
-  grantedAmount: number;
-  receivedAmount: number;
+  cofinanceurId: string;
+  montantPrevu: number;
+  montantAccorde: number;
+  montantRecu: number;
+  statut: 'PREVU' | 'ACCORDE' | 'RECU' | 'ANNULE';
 }
 
 export interface Convention {
   id: string;
-  cofinancerId: string;
+  operationCofinanceurId: string;
   operationId: string;
   ref: string;
   amount: number;
   executionDeadline: string;
   justificationDeadline: string;
   history?: { date: string; user: string; change: string }[];
+}
+
+export interface FinancialEstimationLine {
+  year: number;
+  nature: string;
+  amount: number;
+}
+
+export interface FinancialEstimationVersion {
+  id: string;
+  opId: string;
+  versionNumber: number;
+  name: string;
+  date: string;
+  author: string;
+  status: 'BROUILLON' | 'VALIDÉ';
+  total: number;
+  comment?: string;
+  lines: FinancialEstimationLine[];
+}
+
+export interface EFPPost {
+  nature: string;
+  amount: number;
+  yearBreakdown?: { [year: number]: number };
+  color: string;
+}
+
+export interface EFPVersion {
+  id: string;
+  opId: string;
+  versionNumber: number;
+  date: string;
+  author: string;
+  status: 'BROUILLON' | 'VALIDÉ';
+  total: number;
+  comment?: string;
+  posts: EFPPost[];
+}
+
+export interface Prestataire {
+  id: string;
+  nom: string;
+  siret: string;
+  adresse: string;
+  ville: string;
+  codePostal: string;
+  contactNom: string;
+  contactEmail: string;
+  contactTel: string;
+  specialite: string;
+  statut: 'ACTIF' | 'INACTIF';
+  note?: number;
+  createdAt: string;
 }
