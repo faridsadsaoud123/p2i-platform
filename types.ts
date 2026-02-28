@@ -96,6 +96,92 @@ export interface FinancialEstimationLine {
   amount: number;
 }
 
+// === New entities for estimations / EFP / AE / CP ===
+
+export type EstimationStatus = 'BROUILLON' | 'VALIDÉ';
+
+export interface Estimation {
+  id: string;
+  operationId: string;
+  name: string; // e.g. "Estimation initiale"
+  comment?: string;
+  status: EstimationStatus;
+  createdAt: string;
+  authorId: string;
+}
+
+export interface EstimationVersion {
+  id: string;
+  estimationId: string;
+  versionNumber: number;
+  date: string;
+  authorId: string;
+  comment?: string;
+  total: number;
+  lines: EstimationLigne[];
+}
+
+export interface EstimationLigne {
+  year: number;
+  nature: string;
+  amount: number;
+}
+
+export interface EFP {
+  id: string;
+  operationId: string;
+  name: string;
+  comment?: string;
+  status: 'BROUILLON' | 'VALIDÉ';
+  createdAt: string;
+  authorId: string;
+}
+
+export interface EFPVersion {
+  id: string;
+  efpId: string;
+  versionNumber: number;
+  date: string;
+  authorId: string;
+  comment?: string;
+  total: number;
+  posts: EFPPoste[];
+}
+
+export interface EFPPoste {
+  nature: string; // études, MOE, travaux, contrôles, autres
+  amount: number;
+  yearBreakdown?: Record<number, number>;
+}
+
+export interface AE {
+  id: string;
+  operationId: string;
+  year: number;
+  aePrevues: number;
+  aeOuvertes: number;
+  aeEngagees: number;
+}
+
+export interface CP {
+  id: string;
+  operationId: string;
+  year: number;
+  cpPrevus: number;
+  cpOuverts: number;
+  cpMandates: number;
+}
+
+export interface HistoriqueAction {
+  id: string;
+  relatedId: string; // could be operation, estimation, efp, etc.
+  relatedType: string;
+  date: string;
+  user: string;
+  action: string;
+  comment?: string;
+}
+
 export interface FinancialEstimationVersion {
   id: string;
   opId: string;

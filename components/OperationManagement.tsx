@@ -1,32 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useData } from './DataContext';
-import { MOCK_MARKETS, MOCK_COFINANCEURS, MOCK_OPERATION_COFINANCEURS, MOCK_CONVENTIONS, MarketItem } from '../mockData';
+import { MOCK_CONVENTIONS } from '../mockData';
 import { STATUS_COLORS, PRIORITY_COLORS } from '../constants';
-import { Operation, Cofinanceur, OperationCofinanceur, Convention } from '../types';
+import { Operation } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import { useNotification } from './NotificationSystem';
+import FinancialIntegration from './FinancialIntegration';
 
 const OperationManagement: React.FC = () => {
   const { operations, updateOperation } = useData();
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'MARKETS' | 'COFINANCERS' | 'CONVENTIONS'>('CYCLE');
+  const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'ESTIM_EFP' | 'AE_CP' | 'CONVENTIONS'>('CYCLE');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Edit mode for operation basic info
   const [isEditingOp, setIsEditingOp] = useState(false);
   const [opFormData, setOpFormData] = useState<Partial<Operation>>({});
-
-  const [showMarketModal, setShowMarketModal] = useState(false);
-  const [editingMarket, setEditingMarket] = useState<MarketItem | null>(null);
-
-  // Cofinancement state
-  const [showAddCofinanceur, setShowAddCofinanceur] = useState(false);
-  const [selectedCofinanceurId, setSelectedCofinanceurId] = useState('');
-  const [cofinanceurAmounts, setCofinanceurAmounts] = useState({ prevu: 0, accorde: 0, recu: 0 });
-  const [deleteCofId, setDeleteCofId] = useState<string | null>(null);
 
   const { showNotification } = useNotification();
 
@@ -57,36 +49,6 @@ const OperationManagement: React.FC = () => {
   const checkConventionAlert = (deadline: string) => {
     const days = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return days <= 30 && days >= 0;
-  };
-
-  const handleAssociateCofinanceur = () => {
-    if (!selectedCofinanceurId) {
-      showNotification('Veuillez sélectionner un cofinanceur', 'error');
-      return;
-    }
-    
-    // In a real app, send to API
-    showNotification('Cofinanceur associé avec succès');
-    setShowAddCofinanceur(false);
-    setSelectedCofinanceurId('');
-    setCofinanceurAmounts({ prevu: 0, accorde: 0, recu: 0 });
-  };
-
-  const handleRemoveCofinanceur = () => {
-    if (!deleteCofId) return;
-    
-    const opCof = MOCK_OPERATION_COFINANCEURS.find(oc => oc.id === deleteCofId);
-    if (opCof) {
-      const hasConvention = MOCK_CONVENTIONS.some(conv => conv.operationCofinanceurId === opCof.id);
-      if (hasConvention || opCof.montantRecu > 0) {
-        showNotification('Impossible de supprimer : une convention existe ou un montant a déjà été reçu.', 'error');
-        setDeleteCofId(null);
-        return;
-      }
-    }
-
-    showNotification('Association supprimée');
-    setDeleteCofId(null);
   };
 
   return (
@@ -265,11 +227,11 @@ const OperationManagement: React.FC = () => {
                <button onClick={() => { setSelectedOpId(null); setIsEditingOp(false); }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition"><i className="fas fa-times"></i></button>
             </div>
 
-            <div className="flex border-b border-gray-100 bg-[#f1f3f8]/30 px-8 shrink-0">
+            <div className="flex border-b border-gray-100 bg-[#f1f3f8]/30 px-8 shrink-0 overflow-x-auto">
                {[
                  { id: 'CYCLE', label: 'Cycle & Historique', icon: 'fa-history' },
-                 { id: 'MARKETS', label: 'Marchés Publics', icon: 'fa-file-contract' },
-                 { id: 'COFINANCERS', label: 'Cofinancement', icon: 'fa-hand-holding-usd' },
+                 { id: 'ESTIM_EFP', label: 'Estimations & EFP', icon: 'fa-calculator' },
+                 { id: 'AE_CP', label: 'Suivi AE/CP', icon: 'fa-chart-bar' },
                  { id: 'CONVENTIONS', label: 'Conventions', icon: 'fa-file-signature' },
                ].map(tab => (
                  <button key={tab.id} onClick={() => setActiveDetailTab(tab.id as any)} className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-4 flex items-center gap-2 ${activeDetailTab === tab.id ? 'border-[#fe740e] text-[#fe740e]' : 'border-transparent text-gray-400 hover:text-[#002E5A]'}`}>
@@ -305,126 +267,17 @@ const OperationManagement: React.FC = () => {
 
 
 
-               {activeDetailTab === 'MARKETS' && (
+               {activeDetailTab === 'ESTIM_EFP' && (
                  <section className="animate-in fade-in duration-300 space-y-6">
-                    <div className="flex justify-between items-center">
-                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Marchés rattachés à l'opération</h4>
-                       <button className="bg-[#fe740e] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition hover:brightness-110"><i className="fas fa-plus mr-2"></i> Nouveau Marché</button>
-                    </div>
-                    {MOCK_MARKETS.filter(m => m.opId === selectedOpId).map(market => (
-                      <div key={market.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition group">
-                         <div className="flex gap-6 items-center">
-                            <div className="w-12 h-12 bg-blue-50 text-[#002E5A] rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition"><i className="fas fa-building"></i></div>
-                            <div>
-                               <p className="text-xs font-black text-[#002E5A] uppercase">{market.company}</p>
-                               <p className="text-[10px] text-gray-400 font-bold mt-1">Réf: {market.ref} • {market.date}</p>
-                            </div>
-                         </div>
-                         <div className="text-right">
-                            <p className="text-sm font-black text-[#fe740e]">{market.amount.toLocaleString()} €</p>
-                            <button onClick={() => setEditingMarket(market)} className="text-[9px] font-black text-gray-400 uppercase mt-2 hover:text-[#002E5A] transition">Modifier / Avenant</button>
-                         </div>
-                      </div>
-                    ))}
+                   {/* financial module for estimations and EFP */}
+                   <FinancialIntegration initialOpId={selectedOpId || undefined} defaultTab="EFP" hideNav />
                  </section>
                )}
 
-               {activeDetailTab === 'COFINANCERS' && (
-                 <section className="animate-in fade-in duration-300 space-y-8">
-                    <div className="flex justify-between items-center">
-                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Financeurs Externes</h4>
-                       <button 
-                        onClick={() => setShowAddCofinanceur(true)}
-                        className="bg-[#002E5A] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition hover:brightness-110"
-                       >
-                        <i className="fas fa-plus mr-2"></i> Associer un Cofinanceur
-                       </button>
-                    </div>
-
-                    {showAddCofinanceur && (
-                      <div className="bg-[#f1f3f8]/50 p-8 rounded-3xl border border-gray-100 animate-in zoom-in-95 duration-200">
-                        <h5 className="text-[10px] font-black text-[#002E5A] uppercase tracking-widest mb-6">Nouvelle Association</h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="col-span-2 space-y-1">
-                            <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Sélectionner un Cofinanceur</label>
-                            <select 
-                              className="w-full bg-white border border-gray-200 rounded-xl p-4 text-xs outline-none focus:ring-2 focus:ring-[#002E5A] font-medium"
-                              value={selectedCofinanceurId}
-                              onChange={(e) => setSelectedCofinanceurId(e.target.value)}
-                            >
-                              <option value="">Choisir dans le répertoire...</option>
-                              {MOCK_COFINANCEURS
-                                .filter(c => !MOCK_OPERATION_COFINANCEURS.some(oc => oc.operationId === selectedOpId && oc.cofinanceurId === c.id))
-                                .map(c => (
-                                <option key={c.id} value={c.id}>{c.nom} ({c.type})</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Montant Prévu (€)</label>
-                            <input 
-                              type="number" 
-                              className="w-full bg-white border border-gray-200 rounded-xl p-4 text-xs outline-none focus:ring-2 focus:ring-[#002E5A] font-medium"
-                              value={cofinanceurAmounts.prevu}
-                              onChange={(e) => setCofinanceurAmounts({...cofinanceurAmounts, prevu: Number(e.target.value)})}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Montant Accordé (€)</label>
-                            <input 
-                              type="number" 
-                              className="w-full bg-white border border-gray-200 rounded-xl p-4 text-xs outline-none focus:ring-2 focus:ring-[#002E5A] font-medium"
-                              value={cofinanceurAmounts.accorde}
-                              onChange={(e) => setCofinanceurAmounts({...cofinanceurAmounts, accorde: Number(e.target.value)})}
-                            />
-                          </div>
-                        </div>
-                        <div className="mt-8 flex justify-end gap-3">
-                          <button onClick={() => setShowAddCofinanceur(false)} className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase">Annuler</button>
-                          <button onClick={handleAssociateCofinanceur} className="bg-[#fe740e] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest">Associer</button>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       {MOCK_OPERATION_COFINANCEURS.filter(c => c.operationId === selectedOpId).map(oc => {
-                         const cof = MOCK_COFINANCEURS.find(c => c.id === oc.cofinanceurId);
-                         return (
-                          <div key={oc.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition flex flex-col gap-4 relative">
-                              <button 
-                                onClick={() => setDeleteCofId(oc.id)}
-                                className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition"
-                              >
-                                <i className="fas fa-trash-alt text-xs"></i>
-                              </button>
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-2xl bg-[#f1f3f8] text-[#2d5a8e] flex items-center justify-center text-lg"><i className="fas fa-landmark"></i></div>
-                                <div>
-                                    <p className="text-[10px] font-black text-[#002E5A] uppercase tracking-tighter">{cof?.nom || 'Inconnu'}</p>
-                                    <span className="text-[8px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-black uppercase">{cof?.type || 'AUTRE'}</span>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div>
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase">Accordé</p>
-                                    <p className="text-xs font-black text-[#002E5A]">{oc.montantAccorde.toLocaleString()} €</p>
-                                </div>
-                                <div>
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase">Reçu</p>
-                                    <p className="text-xs font-black text-emerald-600">{oc.montantRecu.toLocaleString()} €</p>
-                                </div>
-                              </div>
-                              <div className="w-full bg-[#f1f3f8] h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-emerald-500 h-full" style={{ width: `${(oc.montantRecu/oc.montantAccorde)*100}%` }}></div>
-                              </div>
-                              <div className="flex justify-between items-center text-[9px] font-black text-gray-400">
-                                <span>Reste à recevoir</span>
-                                <span className="text-red-500">{(oc.montantAccorde - oc.montantRecu).toLocaleString()} €</span>
-                              </div>
-                          </div>
-                         );
-                       })}
-                    </div>
+               {activeDetailTab === 'AE_CP' && (
+                 <section className="animate-in fade-in duration-300 space-y-6">
+                   {/* AE/CP follow-up using financial component */}
+                   <FinancialIntegration initialOpId={selectedOpId || undefined} defaultTab="AE_CP" hideNav />
                  </section>
                )}
 
@@ -472,17 +325,6 @@ const OperationManagement: React.FC = () => {
           </div>
         </div>
       )}
-
-      <ConfirmationModal
-        isOpen={!!deleteCofId}
-        onClose={() => setDeleteCofId(null)}
-        onConfirm={handleRemoveCofinanceur}
-        title="Supprimer l'association"
-        message="Êtes-vous sûr de vouloir retirer ce cofinanceur de cette opération ?"
-        variant="danger"
-      />
-
-
     </div>
   );
 };

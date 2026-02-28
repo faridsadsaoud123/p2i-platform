@@ -6,15 +6,22 @@ import { useNotification } from './NotificationSystem';
 
 type FinTab = 'SIFAC' | 'EFP' | 'AE_CP' | 'CONTROLS';
 
-const FinancialIntegration: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<FinTab>('SIFAC');
+interface FinancialIntegrationProps {
+  initialOpId?: string;
+  defaultTab?: 'SIFAC' | 'EFP' | 'AE_CP' | 'CONTROLS';
+  hideNav?: boolean; // when embedded in another tab
+}
+
+const FinancialIntegration: React.FC<FinancialIntegrationProps> = ({ initialOpId, defaultTab, hideNav = false }) => {
+  const [activeTab, setActiveTab] = useState<FinTab>(defaultTab || 'SIFAC');
+  const showNav = !hideNav;
   const [isImporting, setIsImporting] = useState(false);
   const [importLog, setImportLog] = useState<string[]>([]);
   const [estimations, setEstimations] = useState<FinancialEstimationVersion[]>(MOCK_FINANCIAL_VERSIONS);
   const [efpVersions, setEfpVersions] = useState<EFPVersion[]>(MOCK_EFP_VERSIONS);
   const [selectedVersion, setSelectedVersion] = useState(MOCK_FINANCIAL_VERSIONS[MOCK_FINANCIAL_VERSIONS.length - 1].id);
   const [selectedEFPVersion, setSelectedEFPVersion] = useState(MOCK_EFP_VERSIONS[MOCK_EFP_VERSIONS.length - 1].id);
-  const [opId, setOpId] = useState('OP-24-001');
+  const [opId, setOpId] = useState(initialOpId || 'OP-24-001');
   const { showNotification } = useNotification();
 
   // Modal states
@@ -195,6 +202,7 @@ const FinancialIntegration: React.FC = () => {
       </div>
 
       {/* Main Tabs Navigation */}
+      {showNav && (
       <div className="flex border-b border-gray-200 overflow-x-auto whitespace-nowrap">
         {[
           { id: 'SIFAC', label: 'Import SIFAC', icon: 'fa-sync-alt' },
@@ -216,6 +224,7 @@ const FinancialIntegration: React.FC = () => {
           </button>
         ))}
       </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
