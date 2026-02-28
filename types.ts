@@ -26,6 +26,7 @@ export interface RequestItem {
   priority: Priority;
   status: RequestStatus;
   createdAt: string;
+  date_validation?: string;
   creatorId: string;
   rejectionReason?: string;
   clarificationRequest?: string;
@@ -44,14 +45,16 @@ export interface Operation {
   managerId: string;
   priority: Priority;
   pfiCode: string;
-  nacresCode?: string;
-  eotpCode?: string;
+  nacresCodes?: string[];
+  eotpCodes?: string[];
   aeOpen: number;
   aeEngaged: number;
   cpForecast: number;
   cpPaid: number;
+  estimationInitial?: number;
   startDate: string;
   endDate: string;
+  dateClotureReelle?: string;
   history?: { date: string; user: string; title: string; desc: string }[];
 }
 

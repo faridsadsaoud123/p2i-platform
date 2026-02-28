@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useData } from './DataContext';
 import { MOCK_MARKETS, MOCK_COFINANCEURS, MOCK_OPERATION_COFINANCEURS, MOCK_CONVENTIONS, MarketItem } from '../mockData';
 import { STATUS_COLORS, PRIORITY_COLORS } from '../constants';
@@ -10,8 +10,13 @@ import { useNotification } from './NotificationSystem';
 const OperationManagement: React.FC = () => {
   const { operations, updateOperation } = useData();
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'MARKETS' | 'COFINANCERS' | 'CONVENTIONS'>('CYCLE');
+  const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'IDENTIFIERS' | 'MARKETS' | 'COFINANCERS' | 'CONVENTIONS'>('CYCLE');
+
+  // Identifier state
+  const [showAddIdModal, setShowAddIdModal] = useState<{ type: 'NACRES' | 'EOTP', value: string } | null>(null);
+  const [editingPfi, setEditingPfi] = useState(false);
 
   // Edit mode for operation basic info
   const [isEditingOp, setIsEditingOp] = useState(false);
@@ -95,9 +100,17 @@ const OperationManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#002E5A]">Suivi des Opérations PPI</h1>
           <p className="subtitle text-[#2d5a8e] mt-1 uppercase tracking-widest font-bold">Répertoire opérationnel et pilotage budgétaire</p>
         </div>
-        <button className="bg-white border border-gray-200 text-[#002E5A] px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-gray-50 transition-all uppercase tracking-widest">
-          <i className="fas fa-search mr-2 text-[#fe740e]"></i> Recherche multicritères
-        </button>
+        <div className="flex flex-wrap gap-2">
+            <button
+                onClick={() => navigate('/identifiers')}
+                className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-indigo-100 transition-all uppercase tracking-widest"
+            >
+                <i className="fas fa-fingerprint mr-2"></i> Référentiel Identifiants
+            </button>
+            <button className="bg-white border border-gray-200 text-[#002E5A] px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-gray-50 transition-all uppercase tracking-widest">
+                <i className="fas fa-search mr-2 text-[#fe740e]"></i> Recherche multicritères
+            </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -169,7 +182,10 @@ const OperationManagement: React.FC = () => {
                           <i className="fas fa-pencil-alt mr-1"></i> Modifier
                         </button>
                       </div>
-                      <p className="subtitle text-blue-200 uppercase tracking-widest italic">{selectedOp.pfiCode} • {selectedOp.site}</p>
+                      <p className="subtitle text-blue-200 uppercase tracking-widest italic">
+                        {selectedOp.pfiCode} • {selectedOp.site}
+                        {(selectedOp.nacresCodes?.length || 0) > 0 && ` • NAC: ${selectedOp.nacresCodes?.[0]}${selectedOp.nacresCodes!.length > 1 ? '...' : ''}`}
+                      </p>
                     </>
                   ) : (
                     <div className="space-y-4 max-w-2xl bg-white/5 p-6 rounded-2xl border border-white/10">
@@ -184,13 +200,13 @@ const OperationManagement: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Code PFI (SIFAC)</label>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Estimation Initiale (€)</label>
                           <input
-                            type="text"
+                            type="number"
                             className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
-                            value={opFormData.pfiCode || ''}
-                            onChange={(e) => setOpFormData({...opFormData, pfiCode: e.target.value})}
-                            placeholder="Ex: PFI-24-..."
+                            value={opFormData.estimationInitial || ''}
+                            onChange={(e) => setOpFormData({...opFormData, estimationInitial: Number(e.target.value)})}
+                            placeholder="Montant HT..."
                           />
                         </div>
                         <div>
@@ -223,6 +239,15 @@ const OperationManagement: React.FC = () => {
                             onChange={(e) => setOpFormData({...opFormData, endDate: e.target.value})}
                           />
                         </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-blue-200 uppercase tracking-widest">Date Clôture Réelle</label>
+                          <input
+                            type="date"
+                            className="w-full bg-[#f1f3f8]/10 border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:ring-2 focus:ring-[#fe740e]"
+                            value={opFormData.dateClotureReelle || ''}
+                            onChange={(e) => setOpFormData({...opFormData, dateClotureReelle: e.target.value})}
+                          />
+                        </div>
                       </div>
                       <div className="flex gap-2 pt-2">
                          <button onClick={() => setIsEditingOp(false)} className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] py-3 rounded-xl uppercase">Annuler</button>
@@ -237,6 +262,7 @@ const OperationManagement: React.FC = () => {
             <div className="flex border-b border-gray-100 bg-[#f1f3f8]/30 px-8 shrink-0">
                {[
                  { id: 'CYCLE', label: 'Cycle & Historique', icon: 'fa-history' },
+                 { id: 'IDENTIFIERS', label: 'Identifiants', icon: 'fa-fingerprint' },
                  { id: 'MARKETS', label: 'Marchés Publics', icon: 'fa-file-contract' },
                  { id: 'COFINANCERS', label: 'Cofinancement', icon: 'fa-hand-holding-usd' },
                  { id: 'CONVENTIONS', label: 'Conventions', icon: 'fa-file-signature' },
@@ -270,6 +296,198 @@ const OperationManagement: React.FC = () => {
                         ))}
                      </div>
                   </section>
+               )}
+
+               {activeDetailTab === 'IDENTIFIERS' && (
+                 <section className="animate-in fade-in duration-300 space-y-10">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                       {/* PFI Card (Stable and Mandatory) */}
+                       <div className="col-span-1 md:col-span-3 bg-[#002E5A] text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
+                          <div className="flex justify-between items-start">
+                             <div>
+                                <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-1">Identifiant Principal (Stable)</p>
+                                <h4 className="text-3xl font-black tracking-tighter mb-2">Code PFI</h4>
+                             </div>
+                             {!editingPfi ? (
+                               <button
+                                 onClick={() => setEditingPfi(true)}
+                                 className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition"
+                               >
+                                 Modifier Exceptionnel
+                               </button>
+                             ) : (
+                               <div className="flex gap-2">
+                                  <button onClick={() => setEditingPfi(false)} className="bg-white/10 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase">Annuler</button>
+                                  <button
+                                    onClick={() => {
+                                      const newPfi = (document.getElementById('pfi-input') as HTMLInputElement).value;
+                                      if (newPfi === selectedOp.pfiCode) { setEditingPfi(false); return; }
+                                      if (!newPfi) { showNotification('Le code PFI est obligatoire', 'error'); return; }
+
+                                      // Restriction rule: PFI stable if financial data exists
+                                      if (selectedOp.aeEngaged > 0 && !confirm("Cette opération possède déjà des engagements financiers. La modification du PFI est fortement déconseillée. Voulez-vous continuer ?")) {
+                                        return;
+                                      }
+
+                                      if (operations.some(op => op.pfiCode === newPfi && op.id !== selectedOp.id)) {
+                                        showNotification('Ce code PFI est déjà utilisé par une autre opération.', 'error');
+                                        return;
+                                      }
+                                      updateOperation(selectedOp.id, {
+                                        pfiCode: newPfi,
+                                        history: [
+                                          {
+                                            date: new Date().toLocaleDateString('fr-FR'),
+                                            user: 'Paul C.',
+                                            title: 'Modification PFI',
+                                            desc: `Ancien code: ${selectedOp.pfiCode} -> Nouveau code: ${newPfi}`
+                                          },
+                                          ...(selectedOp.history || [])
+                                        ]
+                                      });
+                                      setEditingPfi(false);
+                                      showNotification('Code PFI mis à jour (Historisé).');
+                                    }}
+                                    className="bg-[#fe740e] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg"
+                                  >
+                                    Confirmer
+                                  </button>
+                               </div>
+                             )}
+                          </div>
+
+                          <div className="mt-8">
+                             {!editingPfi ? (
+                                <p className="text-5xl font-black font-mono tracking-tighter text-[#fe740e]">{selectedOp.pfiCode}</p>
+                             ) : (
+                                <input
+                                  id="pfi-input"
+                                  type="text"
+                                  defaultValue={selectedOp.pfiCode}
+                                  className="w-full bg-white/10 border-none rounded-2xl p-6 text-4xl font-black font-mono tracking-tighter text-white outline-none focus:ring-4 focus:ring-[#fe740e] transition-all"
+                                />
+                             )}
+                          </div>
+                          <div className="mt-6 flex items-center gap-2 text-blue-200">
+                             <i className="fas fa-lock"></i>
+                             <p className="text-[10px] font-bold uppercase italic tracking-wider">Le PFI constitue l'identifiant financier unique de l'opération.</p>
+                          </div>
+                       </div>
+
+                       {/* NACRES Identifiers */}
+                       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+                          <div className="flex justify-between items-center mb-8">
+                             <div>
+                                <h5 className="text-xs font-black text-[#002E5A] uppercase tracking-tight">Codes NACRES</h5>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">Nomenclature Achats</p>
+                             </div>
+                             <button
+                               onClick={() => setShowAddIdModal({ type: 'NACRES', value: '' })}
+                               className="w-10 h-10 bg-blue-50 text-[#2d5a8e] rounded-xl flex items-center justify-center hover:bg-[#002E5A] hover:text-white transition shadow-sm"
+                             >
+                               <i className="fas fa-plus"></i>
+                             </button>
+                          </div>
+                          <div className="space-y-3 flex-1">
+                             {(selectedOp.nacresCodes || []).map((code, idx) => (
+                               <div key={idx} className="group bg-[#f1f3f8]/50 p-4 rounded-2xl border border-gray-50 flex justify-between items-center hover:bg-white hover:shadow-md transition">
+                                  <span className="text-xs font-black text-[#002E5A] font-mono tracking-wider">{code}</span>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Confirmez-vous la suppression du code NACRES "${code}" ?`)) {
+                                        const newCodes = selectedOp.nacresCodes?.filter(c => c !== code) || [];
+                                        updateOperation(selectedOp.id, {
+                                          nacresCodes: newCodes,
+                                          history: [
+                                            {
+                                              date: new Date().toLocaleDateString('fr-FR'),
+                                              user: 'Paul C.',
+                                              title: 'Suppression NACRES',
+                                              desc: `Code supprimé: ${code}`
+                                            },
+                                            ...(selectedOp.history || [])
+                                          ]
+                                        });
+                                        showNotification(`Code NACRES ${code} supprimé.`);
+                                      }
+                                    }}
+                                    className="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                                  >
+                                    <i className="fas fa-trash-alt text-[10px]"></i>
+                                  </button>
+                               </div>
+                             ))}
+                             {(!selectedOp.nacresCodes || selectedOp.nacresCodes.length === 0) && (
+                               <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-30">
+                                  <i className="fas fa-barcode text-3xl mb-2"></i>
+                                  <p className="text-[10px] font-black uppercase">Aucun code</p>
+                               </div>
+                             )}
+                          </div>
+                       </div>
+
+                       {/* EOTP Identifiers */}
+                       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+                          <div className="flex justify-between items-center mb-8">
+                             <div>
+                                <h5 className="text-xs font-black text-[#002E5A] uppercase tracking-tight">Codes EOTP</h5>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">Élément d'OTP</p>
+                             </div>
+                             <button
+                               onClick={() => setShowAddIdModal({ type: 'EOTP', value: '' })}
+                               className="w-10 h-10 bg-blue-50 text-[#2d5a8e] rounded-xl flex items-center justify-center hover:bg-[#002E5A] hover:text-white transition shadow-sm"
+                             >
+                               <i className="fas fa-plus"></i>
+                             </button>
+                          </div>
+                          <div className="space-y-3 flex-1">
+                             {(selectedOp.eotpCodes || []).map((code, idx) => (
+                               <div key={idx} className="group bg-[#f1f3f8]/50 p-4 rounded-2xl border border-gray-50 flex justify-between items-center hover:bg-white hover:shadow-md transition">
+                                  <span className="text-xs font-black text-[#002E5A] font-mono tracking-wider">{code}</span>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Confirmez-vous la suppression du code EOTP "${code}" ?`)) {
+                                        const newCodes = selectedOp.eotpCodes?.filter(c => c !== code) || [];
+                                        updateOperation(selectedOp.id, {
+                                          eotpCodes: newCodes,
+                                          history: [
+                                            {
+                                              date: new Date().toLocaleDateString('fr-FR'),
+                                              user: 'Paul C.',
+                                              title: 'Suppression EOTP',
+                                              desc: `Code supprimé: ${code}`
+                                            },
+                                            ...(selectedOp.history || [])
+                                          ]
+                                        });
+                                        showNotification(`Code EOTP ${code} supprimé.`);
+                                      }
+                                    }}
+                                    className="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                                  >
+                                    <i className="fas fa-trash-alt text-[10px]"></i>
+                                  </button>
+                               </div>
+                             ))}
+                             {(!selectedOp.eotpCodes || selectedOp.eotpCodes.length === 0) && (
+                               <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-30">
+                                  <i className="fas fa-tag text-3xl mb-2"></i>
+                                  <p className="text-[10px] font-black uppercase">Aucun code</p>
+                               </div>
+                             )}
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="p-8 bg-blue-50 rounded-3xl border border-blue-100 flex items-start gap-5">
+                       <div className="w-12 h-12 bg-white text-[#2d5a8e] rounded-2xl flex items-center justify-center text-xl shadow-sm shrink-0"><i className="fas fa-shield-alt"></i></div>
+                       <div>
+                          <h6 className="text-[11px] font-black text-[#2d5a8e] uppercase mb-1">Règles de conformité financière</h6>
+                          <p className="text-[10px] font-medium text-blue-900 leading-relaxed italic">Le code PFI est l'unique identifiant de liaison SIFAC. Les codes NACRES et EOTP permettent d'affiner l'imputation analytique. Toute modification est historisée et impactera les futurs imports de données financières.</p>
+                       </div>
+                    </div>
+                 </section>
                )}
 
                {activeDetailTab === 'MARKETS' && (
@@ -440,7 +658,7 @@ const OperationManagement: React.FC = () => {
         </div>
       )}
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={!!deleteCofId}
         onClose={() => setDeleteCofId(null)}
         onConfirm={handleRemoveCofinanceur}
@@ -448,6 +666,76 @@ const OperationManagement: React.FC = () => {
         message="Êtes-vous sûr de vouloir retirer ce cofinanceur de cette opération ?"
         variant="danger"
       />
+
+      {/* Add Identifier Modal */}
+      {showAddIdModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#002E5A]/60 backdrop-blur-md animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+              <div className="bg-[#002E5A] p-6 flex justify-between items-center text-white">
+                 <h3 className="text-sm font-black uppercase tracking-widest">Ajouter un code {showAddIdModal.type}</h3>
+                 <button onClick={() => setShowAddIdModal(null)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition"><i className="fas fa-times"></i></button>
+              </div>
+              <div className="p-8 space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#2d5a8e] uppercase tracking-wider">Valeur de l'identifiant</label>
+                    <input
+                      autoFocus
+                      type="text"
+                      className="w-full bg-[#f1f3f8] border-none rounded-2xl p-5 text-lg font-black font-mono tracking-widest text-[#002E5A] outline-none focus:ring-4 focus:ring-[#fe740e] transition-all"
+                      placeholder={`Ex: ${showAddIdModal.type === 'NACRES' ? 'NAC-80-01' : 'EOTP-2024-X'}`}
+                      value={showAddIdModal.value}
+                      onChange={(e) => setShowAddIdModal({...showAddIdModal, value: e.target.value.toUpperCase()})}
+                     />
+                 </div>
+                 <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                    <p className="text-[10px] font-bold text-[#fe740e] leading-relaxed italic">Une vérification d'unicité sera effectuée avant validation.</p>
+                 </div>
+              </div>
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                 <button onClick={() => setShowAddIdModal(null)} className="px-6 py-3 text-[10px] font-black text-gray-500 uppercase">Annuler</button>
+                 <button
+                  onClick={() => {
+                    const newValue = showAddIdModal.value.trim();
+                    if (!newValue) { showNotification('La valeur est obligatoire.', 'error'); return; }
+
+                    // Uniqueness check
+                    const allCodes = operations.flatMap(op =>
+                      showAddIdModal.type === 'NACRES' ? (op.nacresCodes || []) : (op.eotpCodes || [])
+                    );
+                    if (allCodes.includes(newValue)) {
+                      showNotification(`Ce code ${showAddIdModal.type} existe déjà dans le système.`, 'error');
+                      return;
+                    }
+
+                    const currentCodes = showAddIdModal.type === 'NACRES' ? (selectedOp.nacresCodes || []) : (selectedOp.eotpCodes || []);
+                    const newCodes = [...currentCodes, newValue];
+
+                    const updateData: Partial<Operation> = {};
+                    if (showAddIdModal.type === 'NACRES') updateData.nacresCodes = newCodes;
+                    else updateData.eotpCodes = newCodes;
+
+                    updateData.history = [
+                      {
+                        date: new Date().toLocaleDateString('fr-FR'),
+                        user: 'Paul C.',
+                        title: `Ajout ${showAddIdModal.type}`,
+                        desc: `Nouvel identifiant rattaché: ${newValue}`
+                      },
+                      ...(selectedOp.history || [])
+                    ];
+
+                    updateOperation(selectedOp.id, updateData);
+                    setShowAddIdModal(null);
+                    showNotification(`Code ${showAddIdModal.type} ajouté avec succès (Historisé).`);
+                  }}
+                  className="bg-[#002E5A] text-white px-8 py-4 text-[10px] font-black rounded-2xl shadow-lg transition uppercase tracking-widest hover:scale-105 active:scale-95"
+                 >
+                  Valider la création
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

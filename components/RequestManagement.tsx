@@ -358,6 +358,12 @@ const RequestManagement: React.FC = () => {
                              <span className="text-[8px] font-bold text-gray-400 uppercase">Créé le</span>
                              <span className="text-xs font-bold text-[#002E5A]">{selectedRequest.createdAt}</span>
                           </div>
+                          {selectedRequest.date_validation && (
+                            <div className="flex flex-col">
+                               <span className="text-[8px] font-bold text-gray-400 uppercase">Validé le</span>
+                               <span className="text-xs font-bold text-[#002E5A]">{selectedRequest.date_validation}</span>
+                            </div>
+                          )}
                           <div className="flex flex-col">
                              <span className="text-[8px] font-bold text-gray-400 uppercase">Demandeur</span>
                              <span className="text-xs font-bold text-[#002E5A]">ID {selectedRequest.creatorId}</span>
