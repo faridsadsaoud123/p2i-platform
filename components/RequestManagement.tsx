@@ -85,17 +85,16 @@ const RequestManagement: React.FC = () => {
     }
 
     if (arbitrationAction === 'VALIDATE') {
-      const opId = transformRequestToOperation(selectedRequest.id, arbitrationComment);
-      if (opId) {
-        showNotification('Demande validée et transformée en opération ! Redirection...', 'success');
-        setSelectedRequest(null);
-        setArbitrationAction(null);
-        setArbitrationComment('');
-        setTimeout(() => {
-          navigate('/operations', { state: { selectedOpId: opId } });
-        }, 1000);
-        return;
-      }
+      // instead of immediately creating the operation, redirect the user to the
+      // operation creation form which will prefill data based on the request
+      showNotification('Demande validée. Veuillez compléter le formulaire d\'opération.', 'success');
+      navigate('/operations/new', { state: { request: selectedRequest } });
+      // reset modal state
+      setSelectedRequest(null);
+      setArbitrationAction(null);
+      setArbitrationComment('');
+      // leave the request status unchanged until the form submits
+      return;
     }
 
     const updated = requests.map(r => {

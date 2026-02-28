@@ -7,7 +7,7 @@ interface DataContextType {
   operations: Operation[];
   setRequests: React.Dispatch<React.SetStateAction<RequestItem[]>>;
   setOperations: React.Dispatch<React.SetStateAction<Operation[]>>;
-  transformRequestToOperation: (requestId: string) => string | null;
+  transformRequestToOperation: (requestId: string, comment?: string, overrides?: Partial<Operation>) => string | null;
   updateRequest: (id: string, updates: Partial<RequestItem>) => void;
   updateOperation: (id: string, updates: Partial<Operation>) => void;
 }
@@ -26,7 +26,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setOperations(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
   };
 
-  const transformRequestToOperation = (requestId: string, comment?: string): string | null => {
+  const transformRequestToOperation = (requestId: string, comment?: string, overrides?: Partial<Operation>): string | null => {
     const request = requests.find(r => r.id === requestId);
     if (!request || (request.status !== 'VALIDE' && request.status !== 'EN_ATTENTE') || request.operationId) return null;
 
@@ -58,7 +58,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           title: 'Opération Créée',
           desc: comment ? `Validée avec commentaire: "${comment}"` : `Transformation automatique depuis la demande ${request.id}.`
         }
-      ]
+      ],
+      ...overrides
     };
 
     setOperations(prev => [newOperation, ...prev]);

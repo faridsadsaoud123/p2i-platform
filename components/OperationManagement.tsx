@@ -59,7 +59,13 @@ const OperationManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#002E5A]">Suivi des Opérations PPI</h1>
           <p className="subtitle text-[#2d5a8e] mt-1 uppercase tracking-widest font-bold">Répertoire opérationnel et pilotage budgétaire</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+            <button
+                onClick={() => navigate('/operations/new')}
+                className="bg-[#fe740e] text-white px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:brightness-110 transition-all uppercase tracking-widest"
+            >
+                <i className="fas fa-plus-circle mr-2"></i> Nouvelle Opération
+            </button>
             <button
                 onClick={() => navigate('/identifiers')}
                 className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-indigo-100 transition-all uppercase tracking-widest"

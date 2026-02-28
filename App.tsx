@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import RequestManagement from './components/RequestManagement';
 import OperationManagement from './components/OperationManagement';
+import OperationForm from './components/OperationForm';
 import IdentifierRegistry from './components/IdentifierRegistry';
 import FinancialIntegration from './components/FinancialIntegration';
 import PlanningView from './components/PlanningView';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Dashboard />} />
               <Route path="/requests" element={<RequestManagement />} />
               <Route path="/operations" element={<OperationManagement />} />
+              <Route path="/operations/new" element={<OperationForm />} />
               <Route path="/identifiers" element={<IdentifierRegistry />} />
               <Route path="/finance" element={<FinancialIntegration />} />
               <Route path="/planning" element={<PlanningView />} />
