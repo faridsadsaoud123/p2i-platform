@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useData } from './DataContext';
 import { MOCK_MARKETS, MOCK_COFINANCEURS, MOCK_OPERATION_COFINANCEURS, MOCK_CONVENTIONS, MarketItem } from '../mockData';
 import { STATUS_COLORS, PRIORITY_COLORS } from '../constants';
@@ -10,6 +10,7 @@ import { useNotification } from './NotificationSystem';
 const OperationManagement: React.FC = () => {
   const { operations, updateOperation } = useData();
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedOpId, setSelectedOpId] = useState<string | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<'CYCLE' | 'IDENTIFIERS' | 'MARKETS' | 'COFINANCERS' | 'CONVENTIONS'>('CYCLE');
 
@@ -99,9 +100,17 @@ const OperationManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#002E5A]">Suivi des Opérations PPI</h1>
           <p className="subtitle text-[#2d5a8e] mt-1 uppercase tracking-widest font-bold">Répertoire opérationnel et pilotage budgétaire</p>
         </div>
-        <button className="bg-white border border-gray-200 text-[#002E5A] px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-gray-50 transition-all uppercase tracking-widest">
-          <i className="fas fa-search mr-2 text-[#fe740e]"></i> Recherche multicritères
-        </button>
+        <div className="flex flex-wrap gap-2">
+            <button
+                onClick={() => navigate('/identifiers')}
+                className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-indigo-100 transition-all uppercase tracking-widest"
+            >
+                <i className="fas fa-fingerprint mr-2"></i> Référentiel Identifiants
+            </button>
+            <button className="bg-white border border-gray-200 text-[#002E5A] px-4 py-3 rounded-xl flex items-center font-bold text-xs shadow-sm hover:bg-gray-50 transition-all uppercase tracking-widest">
+                <i className="fas fa-search mr-2 text-[#fe740e]"></i> Recherche multicritères
+            </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
