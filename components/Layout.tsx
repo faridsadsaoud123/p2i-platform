@@ -11,51 +11,54 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
 
   const menuItems = [
-    { path: '/', label: 'Tableau de bord', icon: 'fa-chart-pie' },
-    { path: '/requests', label: 'Recensement', icon: 'fa-file-signature' },
-    { path: '/operations', label: 'Opérations P2I', icon: 'fa-tasks' },
-    { path: '/finance', label: 'Finance & SIFAC', icon: 'fa-file-invoice-dollar' },
+    { path: '/', label: 'Tableau de bord', icon: 'fa-th-large' },
+    { path: '/requests', label: 'Recensement', icon: 'fa-clipboard-list' },
+    { path: '/operations', label: 'Opérations P2I', icon: 'fa-project-diagram' },
+    { path: '/finance', label: 'Finance & SIFAC', icon: 'fa-coins' },
     { path: '/planning', label: 'Planning & Trésorerie', icon: 'fa-calendar-alt' },
+    { path: '/cofinanceurs', label: 'Cofinanceurs', icon: 'fa-landmark' },
+    { path: '/marches', label: 'Marchés Publics', icon: 'fa-file-contract' },
+    { path: '/prestataires', label: 'Prestataires', icon: 'fa-handshake' },
     { path: '/users', label: 'Accès & Comptes', icon: 'fa-users-cog' },
   ];
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f1f3f8]">
       {/* Sidebar */}
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-[#002E5A] text-white transition-all duration-300 hidden md:flex flex-col shadow-xl z-20`}>
-        <div className="p-6 flex items-center justify-between border-b border-blue-900/50">
+      <aside className={`${isSidebarOpen ? 'w-72' : 'w-20'} bg-[#002E5A] text-white transition-all duration-300 hidden md:flex flex-col shadow-xl z-20`}>
+        <div className="p-8 flex items-center justify-between">
           {isSidebarOpen ? (
             <div className="flex flex-col">
-              <span className="font-bold text-lg tracking-wider">UPJV</span>
-              <span className="text-[10px] uppercase tracking-widest text-blue-200">Plateforme P2I</span>
+              <span className="font-bold text-xl tracking-wider">UPJV</span>
+              <span className="text-[10px] uppercase tracking-widest text-blue-200 opacity-60">Plateforme P2I</span>
             </div>
           ) : (
             <span className="font-bold text-center w-full">U</span>
           )}
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 hover:bg-blue-800 rounded transition">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 hover:bg-blue-800 rounded transition opacity-50">
             <i className={`fas ${isSidebarOpen ? 'fa-indent' : 'fa-outdent'}`}></i>
           </button>
         </div>
         
-        <nav className="flex-1 mt-6 space-y-1 px-3">
+        <nav className="flex-1 mt-4 space-y-4 px-6 overflow-y-auto">
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center p-3 rounded-xl transition-all duration-200 ${
+              className={`flex items-center py-3 transition-all duration-200 ${
                 location.pathname === item.path 
-                ? 'bg-[#fe740e] text-white shadow-lg' 
-                : 'text-blue-100 hover:bg-blue-800 hover:text-white'
+                ? 'text-white font-bold bg-blue-800/40 rounded-xl px-4 -mx-4' 
+                : 'text-blue-100/70 hover:text-white hover:bg-blue-800/20 rounded-xl px-4 -mx-4'
               }`}
             >
-              <i className={`fas ${item.icon} w-6 text-center text-lg`}></i>
-              {isSidebarOpen && <span className="ml-3 font-medium text-sm">{item.label}</span>}
+              <i className={`fas ${item.icon} w-6 text-center mr-3 ${location.pathname === item.path ? 'text-[#fe740e]' : ''}`}></i>
+              {isSidebarOpen && <span className="text-[11px] tracking-wide uppercase">{item.label}</span>}
             </Link>
           ))}
         </nav>
         
-        <div className="p-4 border-t border-blue-900/50">
-          <div className="flex items-center p-2 bg-blue-900/30 rounded-xl">
+        <div className="p-6">
+          <div className="flex items-center p-3 bg-blue-900/20 rounded-2xl">
             <div className="w-10 h-10 rounded-full bg-[#fe740e] flex items-center justify-center text-white font-bold shadow-inner">JD</div>
             {isSidebarOpen && (
               <div className="ml-3 overflow-hidden">

@@ -1,6 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
-import { MOCK_FINANCIAL_VERSIONS, MOCK_EFP_POSTS, MOCK_SIFAC_ANOMALIES, MOCK_OPERATIONS } from '../mockData';
+import React, { useState, useMemo, useEffect } from 'react';
+import { MOCK_FINANCIAL_VERSIONS, MOCK_EFP_VERSIONS, MOCK_SIFAC_ANOMALIES, MOCK_OPERATIONS } from '../mockData';
+import { FinancialEstimationVersion, EFPVersion, FinancialEstimationLine, EFPPost } from '../types';
+import { useNotification } from './NotificationSystem';
 
 type FinTab = 'SIFAC' | 'EFP' | 'AE_CP' | 'CONTROLS';
 
@@ -8,8 +10,44 @@ const FinancialIntegration: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FinTab>('SIFAC');
   const [isImporting, setIsImporting] = useState(false);
   const [importLog, setImportLog] = useState<string[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState(MOCK_FINANCIAL_VERSIONS[1].id);
+  const [estimations, setEstimations] = useState<FinancialEstimationVersion[]>(MOCK_FINANCIAL_VERSIONS);
+  const [efpVersions, setEfpVersions] = useState<EFPVersion[]>(MOCK_EFP_VERSIONS);
+  const [selectedVersion, setSelectedVersion] = useState(MOCK_FINANCIAL_VERSIONS[MOCK_FINANCIAL_VERSIONS.length - 1].id);
+  const [selectedEFPVersion, setSelectedEFPVersion] = useState(MOCK_EFP_VERSIONS[MOCK_EFP_VERSIONS.length - 1].id);
   const [opId, setOpId] = useState('OP-24-001');
+  const { showNotification } = useNotification();
+
+  // Modal states
+  const [showEstimationModal, setShowEstimationModal] = useState(false);
+  const [showEFPModal, setShowEFPModal] = useState(false);
+  const [showAnnualBreakdownDrawer, setShowAnnualBreakdownDrawer] = useState<number | null>(null); // index of post
+
+  // Form states
+  const [estimationForm, setEstimationForm] = useState<{
+    name: string;
+    comment: string;
+    lines: FinancialEstimationLine[];
+  }>({
+    name: '',
+    comment: '',
+    lines: [{ year: 2024, nature: 'Travaux', amount: 0 }]
+  });
+
+  const [efpForm, setEfpForm] = useState<{
+    comment: string;
+    posts: EFPPost[];
+    annualBreakdownEnabled: boolean;
+  }>({
+    comment: '',
+    posts: [
+      { nature: 'Études', amount: 0, yearBreakdown: {}, color: 'bg-blue-500' },
+      { nature: 'MOE', amount: 0, yearBreakdown: {}, color: 'bg-indigo-500' },
+      { nature: 'Travaux', amount: 0, yearBreakdown: {}, color: 'bg-[#fe740e]' },
+      { nature: 'Contrôles', amount: 0, yearBreakdown: {}, color: 'bg-emerald-500' },
+      { nature: 'Divers', amount: 0, yearBreakdown: {}, color: 'bg-gray-500' }
+    ],
+    annualBreakdownEnabled: false
+  });
 
   const handleImport = () => {
     setIsImporting(true);
@@ -26,7 +64,116 @@ const FinancialIntegration: React.FC = () => {
   };
 
   const currentOp = MOCK_OPERATIONS.find(o => o.id === opId);
-  const versionData = MOCK_FINANCIAL_VERSIONS.find(v => v.id === selectedVersion);
+  const versionData = estimations.find(v => v.id === selectedVersion);
+  const currentEFPVersion = efpVersions.find(v => v.id === selectedEFPVersion);
+
+  // Estimation Handlers
+  const handleOpenEstimationModal = () => {
+    const nextVersion = estimations.length + 1;
+    setEstimationForm({
+      name: `Révision ${nextVersion}`,
+      comment: '',
+      lines: versionData ? [...versionData.lines] : [{ year: 2024, nature: 'Travaux', amount: 0 }]
+    });
+    setShowEstimationModal(true);
+  };
+
+  const handleSaveEstimation = (status: 'BROUILLON' | 'VALIDÉ') => {
+    // Validation
+    if (!estimationForm.name) {
+      showNotification('Le nom de la version est obligatoire.', 'error');
+      return;
+    }
+    if (estimations.length > 0 && !estimationForm.comment) {
+      showNotification('Le commentaire de justification est obligatoire pour une révision.', 'error');
+      return;
+    }
+    for (const line of estimationForm.lines) {
+      if (line.amount < 0) {
+        showNotification('Les montants doivent être positifs.', 'error');
+        return;
+      }
+      if (!line.nature || !line.year) {
+        showNotification('Tous les champs des lignes sont obligatoires.', 'error');
+        return;
+      }
+    }
+
+    const total = estimationForm.lines.reduce((acc, curr) => acc + curr.amount, 0);
+    const nextVersionNum = estimations.length + 1;
+    const newVersion: FinancialEstimationVersion = {
+      id: `v${nextVersionNum}`,
+      opId: opId,
+      versionNumber: nextVersionNum,
+      name: estimationForm.name,
+      date: new Date().toISOString().split('T')[0],
+      author: 'Paul C.',
+      status,
+      total,
+      comment: estimationForm.comment,
+      lines: estimationForm.lines
+    };
+
+    setEstimations(prev => [...prev, newVersion]);
+    setSelectedVersion(newVersion.id);
+    setShowEstimationModal(false);
+    showNotification(`Nouvelle estimation ${status === 'VALIDÉ' ? 'validée' : 'enregistrée en brouillon'}.`);
+  };
+
+  // EFP Handlers
+  const handleOpenEFPModal = () => {
+    const nextVersion = efpVersions.length + 1;
+    setEfpForm({
+      comment: '',
+      posts: currentEFPVersion ? JSON.parse(JSON.stringify(currentEFPVersion.posts)) : [
+        { nature: 'Études', amount: 0, yearBreakdown: {}, color: 'bg-blue-500' },
+        { nature: 'MOE', amount: 0, yearBreakdown: {}, color: 'bg-indigo-500' },
+        { nature: 'Travaux', amount: 0, yearBreakdown: {}, color: 'bg-[#fe740e]' },
+        { nature: 'Contrôles', amount: 0, yearBreakdown: {}, color: 'bg-emerald-500' },
+        { nature: 'Divers', amount: 0, yearBreakdown: {}, color: 'bg-gray-500' }
+      ],
+      annualBreakdownEnabled: false
+    });
+    setShowEFPModal(true);
+  };
+
+  const handleSaveEFP = (status: 'BROUILLON' | 'VALIDÉ') => {
+    // Validation
+    const travauxPost = efpForm.posts.find(p => p.nature === 'Travaux');
+    if (!travauxPost || travauxPost.amount <= 0) {
+      showNotification('Le poste Travaux est obligatoire et doit être supérieur à 0.', 'error');
+      return;
+    }
+    if (efpVersions.length > 0 && !efpForm.comment) {
+      showNotification('Le commentaire de recalage est obligatoire pour une révision.', 'error');
+      return;
+    }
+    for (const post of efpForm.posts) {
+      if (post.amount < 0) {
+        showNotification('Les montants doivent être positifs.', 'error');
+        return;
+      }
+    }
+
+    const total = efpForm.posts.reduce((acc, curr) => acc + curr.amount, 0);
+    const nextVersionNum = efpVersions.length + 1;
+    const newVersion: EFPVersion = {
+      id: `efp-v${nextVersionNum}`,
+      opId: opId,
+      versionNumber: nextVersionNum,
+      date: new Date().toISOString().split('T')[0],
+      author: 'Paul C.',
+      status,
+      total,
+      comment: efpForm.comment,
+      posts: efpForm.posts
+    };
+
+    setEfpVersions(prev => [...prev, newVersion]);
+    setSelectedEFPVersion(newVersion.id);
+    setShowEFPModal(false);
+    showNotification(`Nouvelle version EFP ${status === 'VALIDÉ' ? 'validée' : 'enregistrée en brouillon'}.`);
+  };
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
@@ -121,85 +268,153 @@ const FinancialIntegration: React.FC = () => {
 
             {/* TAB: EFP (Estimation Versioning) */}
             {activeTab === 'EFP' && (
-              <div className="animate-in fade-in duration-300 space-y-8">
-                 <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-6">
-                    <div>
-                       <h3 className="text-sm font-bold text-[#002E5A] uppercase tracking-widest flex items-center gap-3">
-                          <i className="fas fa-history text-[#fe740e]"></i> Versions de l'Estimation (EFP)
-                       </h3>
-                       <p className="text-[10px] text-gray-400 mt-1 italic tracking-tight">RG1 : Toute modification d’une estimation validée crée une nouvelle version.</p>
+              <div className="animate-in fade-in duration-300 space-y-12">
+                 {/* SECTION 1: ESTIMATION FINANCIERE */}
+                 <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-6">
+                       <div>
+                          <h3 className="text-sm font-bold text-[#002E5A] uppercase tracking-widest flex items-center gap-3">
+                             <i className="fas fa-history text-[#fe740e]"></i> Versions de l'Estimation Financière
+                          </h3>
+                          <p className="text-[10px] text-gray-400 mt-1 italic tracking-tight">RG1 : Toute modification d’une estimation validée crée une nouvelle version.</p>
+                       </div>
+                       <div className="flex gap-2">
+                          <select 
+                             value={selectedVersion}
+                             onChange={(e) => setSelectedVersion(e.target.value)}
+                             className="bg-[#f1f3f8] border-none rounded-xl text-[10px] font-bold px-4 py-2 outline-none focus:ring-2 focus:ring-[#002E5A]"
+                          >
+                             {estimations.map(v => <option key={v.id} value={v.id}>{v.name} ({v.date})</option>)}
+                          </select>
+                          <button 
+                            onClick={handleOpenEstimationModal}
+                            className="bg-[#fe740e] text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase shadow-lg transition hover:brightness-110"
+                          >
+                             <i className="fas fa-plus-circle mr-2"></i> Nouvelle Estimation
+                          </button>
+                       </div>
                     </div>
-                    <div className="flex gap-2">
-                       <select 
-                          value={selectedVersion}
-                          onChange={(e) => setSelectedVersion(e.target.value)}
-                          className="bg-[#f1f3f8] border-none rounded-xl text-[10px] font-bold px-4 py-2 outline-none focus:ring-2 focus:ring-[#002E5A]"
-                       >
-                          {MOCK_FINANCIAL_VERSIONS.map(v => <option key={v.id} value={v.id}>{v.name} ({v.date})</option>)}
-                       </select>
-                       <button className="bg-[#fe740e] text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase shadow-lg transition hover:brightness-110">
-                          <i className="fas fa-plus-circle mr-2"></i> Recalage
-                       </button>
+
+                    <div className="space-y-6">
+                       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+                          <div className="flex gap-8">
+                             <div>
+                                <p className="text-[8px] font-bold text-gray-400 uppercase">Statut</p>
+                                <span className={`text-[9px] font-black uppercase tracking-widest ${versionData?.status === 'VALIDÉ' ? 'text-green-600' : 'text-[#fe740e]'}`}>{versionData?.status}</span>
+                             </div>
+                             <div>
+                                <p className="text-[8px] font-bold text-gray-400 uppercase">Auteur</p>
+                                <span className="text-[9px] font-black uppercase text-[#002E5A]">{versionData?.author}</span>
+                             </div>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[8px] font-bold text-gray-400 uppercase">Montant Total Version</p>
+                             <span className="text-lg font-black text-[#002E5A]">{versionData?.total.toLocaleString()} €</span>
+                          </div>
+                       </div>
+
+                       <div className="overflow-x-auto">
+                          <table className="w-full text-left">
+                             <thead className="bg-[#002E5A] text-white text-[9px] font-black uppercase tracking-widest">
+                                <tr>
+                                   <th className="px-6 py-4 rounded-l-2xl">Nature du Poste</th>
+                                   <th className="px-6 py-4 text-center">Année</th>
+                                   <th className="px-6 py-4 text-right rounded-r-2xl">Montant HT</th>
+                                </tr>
+                             </thead>
+                             <tbody className="divide-y divide-gray-50">
+                                {versionData?.lines.map((item, i) => (
+                                  <tr key={i} className="group hover:bg-gray-50 transition border-b border-gray-100">
+                                     <td className="px-6 py-5">
+                                        <div className="flex items-center gap-3">
+                                           <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? 'bg-blue-500' : 'bg-[#fe740e]'}`}></div>
+                                           <span className="text-[10px] font-bold text-gray-700">{item.nature}</span>
+                                        </div>
+                                     </td>
+                                     <td className="px-6 py-5 text-center font-bold text-gray-400 text-[10px]">{item.year}</td>
+                                     <td className="px-6 py-5 text-right font-black text-[#002E5A] text-[10px]">{item.amount.toLocaleString()} €</td>
+                                  </tr>
+                                ))}
+                             </tbody>
+                          </table>
+                       </div>
+                       {versionData?.comment && (
+                        <div className="p-4 bg-[#dbeafe]/30 rounded-2xl border border-blue-100 flex items-start gap-4">
+                           <i className="fas fa-comment-dots text-[#2d5a8e] mt-1"></i>
+                           <div>
+                              <p className="text-[9px] font-bold text-[#2d5a8e] uppercase mb-1">Commentaire de version</p>
+                              <p className="text-[10px] text-[#002E5A] italic">"{versionData.comment}"</p>
+                           </div>
+                        </div>
+                       )}
                     </div>
                  </div>
 
-                 <div className="space-y-6">
-                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
-                       <div className="flex gap-8">
-                          <div>
-                             <p className="text-[8px] font-bold text-gray-400 uppercase">Statut</p>
-                             <span className={`text-[9px] font-black uppercase tracking-widest ${versionData?.status === 'VALIDÉ' ? 'text-green-600' : 'text-[#fe740e]'}`}>{versionData?.status}</span>
-                          </div>
-                          <div>
-                             <p className="text-[8px] font-bold text-gray-400 uppercase">Auteur</p>
-                             <span className="text-[9px] font-black uppercase text-[#002E5A]">{versionData?.author}</span>
-                          </div>
+                 {/* SECTION 2: EFP (HISTORIQUE) */}
+                 <div className="space-y-6 pt-8 border-t border-gray-100">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-6">
+                       <div>
+                          <h3 className="text-sm font-bold text-[#002E5A] uppercase tracking-widest flex items-center gap-3">
+                             <i className="fas fa-file-invoice-dollar text-[#fe740e]"></i> Historique des versions EFP
+                          </h3>
+                          <p className="text-[10px] text-gray-400 mt-1 italic tracking-tight">RG2 : L'EFP détaille les postes de dépenses par nature technique.</p>
                        </div>
-                       <div className="text-right">
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Montant Total Version</p>
-                          <span className="text-lg font-black text-[#002E5A]">{versionData?.total.toLocaleString()} €</span>
+                       <div className="flex gap-2">
+                          <select 
+                             value={selectedEFPVersion}
+                             onChange={(e) => setSelectedEFPVersion(e.target.value)}
+                             className="bg-[#f1f3f8] border-none rounded-xl text-[10px] font-bold px-4 py-2 outline-none focus:ring-2 focus:ring-[#002E5A]"
+                          >
+                             {efpVersions.map(v => <option key={v.id} value={v.id}>EFP Version {v.versionNumber} ({v.date})</option>)}
+                          </select>
+                          <button 
+                            onClick={handleOpenEFPModal}
+                            className="bg-[#002E5A] text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase shadow-lg transition hover:brightness-110"
+                          >
+                             <i className="fas fa-plus-circle mr-2"></i> {efpVersions.length === 0 ? 'Créer l\'EFP' : 'Nouvelle version EFP'}
+                          </button>
                        </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                       <table className="w-full text-left">
-                          <thead className="bg-[#002E5A] text-white text-[9px] font-black uppercase tracking-widest">
-                             <tr>
-                                <th className="px-6 py-4 rounded-l-2xl">Nature du Poste</th>
-                                <th className="px-6 py-4 text-center">Progression</th>
-                                <th className="px-6 py-4 text-right">Ventilation 2024</th>
-                                <th className="px-6 py-4 text-right">Ventilation 2025</th>
-                                <th className="px-6 py-4 text-right rounded-r-2xl">Montant HT</th>
-                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                             {MOCK_EFP_POSTS.map((item, i) => (
-                               <tr key={i} className="group hover:bg-gray-50 transition border-b border-gray-100">
-                                  <td className="px-6 py-5">
-                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${item.color}`}></div>
-                                        <span className="text-[10px] font-bold text-gray-700">{item.nature}</span>
-                                     </div>
-                                  </td>
-                                  <td className="px-6 py-5">
-                                     <div className="w-24 bg-gray-100 h-1.5 rounded-full overflow-hidden mx-auto shadow-inner">
-                                        <div className={`${item.color} h-full rounded-full transition-all duration-700`} style={{ width: `${(item.amount / (versionData?.total || 1)) * 100}%` }}></div>
-                                     </div>
-                                  </td>
-                                  <td className="px-6 py-5 text-right font-bold text-gray-400 text-[10px]">{(item.yearBreakdown as any)[2024]?.toLocaleString() || '-'}</td>
-                                  <td className="px-6 py-5 text-right font-bold text-gray-400 text-[10px]">{(item.yearBreakdown as any)[2025]?.toLocaleString() || '-'}</td>
-                                  <td className="px-6 py-5 text-right font-black text-[#002E5A] text-[10px]">{item.amount.toLocaleString()} €</td>
-                               </tr>
-                             ))}
-                          </tbody>
-                       </table>
-                    </div>
-                    <div className="p-4 bg-[#dbeafe]/30 rounded-2xl border border-blue-100 flex items-start gap-4">
-                       <i className="fas fa-comment-dots text-[#2d5a8e] mt-1"></i>
-                       <div>
-                          <p className="text-[9px] font-bold text-[#2d5a8e] uppercase mb-1">Commentaire de version obligatoire (RG4)</p>
-                          <p className="text-[10px] text-[#002E5A] italic">"Mise à jour suite au passage en CODIR - Ajustement du poste Travaux après consultation des entreprises."</p>
+                    <div className="space-y-6">
+                       <div className="flex items-center justify-between px-4 py-3 bg-[#f1f3f8]/50 rounded-xl">
+                          <div className="flex gap-8">
+                             <div>
+                                <p className="text-[8px] font-bold text-gray-400 uppercase">Statut</p>
+                                <span className={`text-[9px] font-black uppercase tracking-widest ${currentEFPVersion?.status === 'VALIDÉ' ? 'text-green-600' : 'text-[#fe740e]'}`}>{currentEFPVersion?.status}</span>
+                             </div>
+                             <div>
+                                <p className="text-[8px] font-bold text-gray-400 uppercase">Auteur</p>
+                                <span className="text-[9px] font-black uppercase text-[#002E5A]">{currentEFPVersion?.author}</span>
+                             </div>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[8px] font-bold text-gray-400 uppercase">Total EFP</p>
+                             <span className="text-lg font-black text-[#002E5A]">{currentEFPVersion?.total.toLocaleString()} €</span>
+                          </div>
                        </div>
+
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {currentEFPVersion?.posts.map((post, i) => (
+                            <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center group hover:border-[#fe740e] transition">
+                               <div className="flex items-center gap-3">
+                                  <div className={`w-2 h-2 rounded-full ${post.color}`}></div>
+                                  <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">{post.nature}</span>
+                               </div>
+                               <span className="text-[11px] font-black text-[#002E5A]">{post.amount.toLocaleString()} €</span>
+                            </div>
+                          ))}
+                       </div>
+
+                       {currentEFPVersion?.comment && (
+                        <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-start gap-4">
+                           <i className="fas fa-info-circle text-[#fe740e] mt-1"></i>
+                           <div>
+                              <p className="text-[9px] font-bold text-[#fe740e] uppercase mb-1">Commentaire de recalage</p>
+                              <p className="text-[10px] text-orange-900 italic">"{currentEFPVersion.comment}"</p>
+                           </div>
+                        </div>
+                       )}
                     </div>
                  </div>
               </div>
@@ -394,6 +609,293 @@ const FinancialIntegration: React.FC = () => {
            </div>
         </div>
       </div>
+
+      {/* MODAL: NOUVELLE ESTIMATION */}
+      {showEstimationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#002E5A]/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-[#002E5A] p-6 flex justify-between items-center text-white">
+              <h3 className="text-lg font-bold uppercase tracking-widest">Créer une estimation (Version {estimations.length + 1})</h3>
+              <button onClick={() => setShowEstimationModal(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition"><i className="fas fa-times"></i></button>
+            </div>
+            <div className="p-8 overflow-y-auto custom-scrollbar space-y-8">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Nom de la version <span className="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" 
+                    value={estimationForm.name}
+                    onChange={(e) => setEstimationForm({...estimationForm, name: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Commentaire de justification {estimations.length > 0 && <span className="text-red-500">*</span>}</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" 
+                    placeholder="Ex: Mise à jour après CODIR..."
+                    value={estimationForm.comment}
+                    onChange={(e) => setEstimationForm({...estimationForm, comment: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-black text-[#002E5A] uppercase tracking-widest">Ventilation par Nature</h4>
+                  <button 
+                    onClick={() => setEstimationForm({...estimationForm, lines: [...estimationForm.lines, { year: 2024, nature: 'Travaux', amount: 0 }]})}
+                    className="text-[10px] font-bold text-[#fe740e] hover:underline"
+                  >
+                    <i className="fas fa-plus-circle mr-1"></i> Ajouter ligne
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {estimationForm.lines.map((line, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-3 items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <div className="col-span-3">
+                        <select 
+                          className="w-full bg-white border-none rounded-lg p-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-[#002E5A]"
+                          value={line.year}
+                          onChange={(e) => {
+                            const newLines = [...estimationForm.lines];
+                            newLines[idx].year = Number(e.target.value);
+                            setEstimationForm({...estimationForm, lines: newLines});
+                          }}
+                        >
+                          <option value={2024}>2024</option>
+                          <option value={2025}>2025</option>
+                          <option value={2026}>2026</option>
+                        </select>
+                      </div>
+                      <div className="col-span-4">
+                        <select 
+                          className="w-full bg-white border-none rounded-lg p-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-[#002E5A]"
+                          value={line.nature}
+                          onChange={(e) => {
+                            const newLines = [...estimationForm.lines];
+                            newLines[idx].nature = e.target.value;
+                            setEstimationForm({...estimationForm, lines: newLines});
+                          }}
+                        >
+                          <option value="Études">Études</option>
+                          <option value="MOE">MOE</option>
+                          <option value="Travaux">Travaux</option>
+                          <option value="Contrôles">Contrôles</option>
+                          <option value="Divers">Divers</option>
+                        </select>
+                      </div>
+                      <div className="col-span-4">
+                        <div className="relative">
+                          <input 
+                            type="number" 
+                            className="w-full bg-white border-none rounded-lg p-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-[#002E5A] pr-8"
+                            value={line.amount}
+                            onChange={(e) => {
+                              const newLines = [...estimationForm.lines];
+                              newLines[idx].amount = Number(e.target.value);
+                              setEstimationForm({...estimationForm, lines: newLines});
+                            }}
+                          />
+                          <span className="absolute right-3 top-2 text-[10px] font-bold text-gray-400">€</span>
+                        </div>
+                      </div>
+                      <div className="col-span-1 text-center">
+                        <button 
+                          onClick={() => {
+                            const newLines = estimationForm.lines.filter((_, i) => i !== idx);
+                            setEstimationForm({...estimationForm, lines: newLines});
+                          }}
+                          className="text-red-400 hover:text-red-600 transition"
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 pt-6 border-t border-gray-100">
+                <div className="space-y-3">
+                  <h5 className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Récapitulatif par Année</h5>
+                  <div className="space-y-1">
+                    {[2024, 2025, 2026].map(year => {
+                      const yearTotal = estimationForm.lines.filter(l => l.year === year).reduce((acc: number, curr: FinancialEstimationLine) => acc + curr.amount, 0);
+                      if (yearTotal === 0) return null;
+                      return (
+                        <div key={year} className="flex justify-between text-[10px] font-bold">
+                          <span className="text-gray-500">{year}</span>
+                          <span className="text-[#002E5A]">{yearTotal.toLocaleString()} €</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="bg-[#002E5A] p-6 rounded-2xl text-white text-center shadow-xl">
+                  <p className="text-[9px] font-bold text-blue-300 uppercase tracking-widest mb-1">Total Global Estimé</p>
+                  <p className="text-2xl font-black">{estimationForm.lines.reduce((acc: number, curr: FinancialEstimationLine) => acc + curr.amount, 0).toLocaleString()} €</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button onClick={() => setShowEstimationModal(false)} className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Annuler</button>
+              <button onClick={() => handleSaveEstimation('BROUILLON')} className="bg-white border border-gray-200 text-[#002E5A] px-8 py-3 text-[10px] font-bold rounded-xl shadow-sm transition uppercase tracking-widest hover:bg-gray-50">Enregistrer (Brouillon)</button>
+              <button onClick={() => handleSaveEstimation('VALIDÉ')} className="bg-[#fe740e] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest hover:brightness-110">Valider l'Estimation</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NOUVELLE VERSION EFP */}
+      {showEFPModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#002E5A]/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-[#002E5A] p-6 flex justify-between items-center text-white">
+              <h3 className="text-lg font-bold uppercase tracking-widest">
+                {efpVersions.length === 0 ? 'Créer l\'EFP (Version 1)' : `Réviser l'EFP (Version ${efpVersions.length + 1})`}
+              </h3>
+              <button onClick={() => setShowEFPModal(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition"><i className="fas fa-times"></i></button>
+            </div>
+            <div className="p-8 overflow-y-auto custom-scrollbar space-y-8">
+              <div className="flex justify-between items-center">
+                <div className="space-y-1 flex-1 mr-6">
+                  <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Commentaire de recalage {efpVersions.length > 0 && <span className="text-red-500">*</span>}</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" 
+                    placeholder="Ex: Ajustement après réception des devis..."
+                    value={efpForm.comment}
+                    onChange={(e) => setEfpForm({...efpForm, comment: e.target.value})}
+                  />
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Ventilation annuelle</span>
+                  <button 
+                    onClick={() => setEfpForm({...efpForm, annualBreakdownEnabled: !efpForm.annualBreakdownEnabled})}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${efpForm.annualBreakdownEnabled ? 'bg-[#fe740e]' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${efpForm.annualBreakdownEnabled ? 'left-7' : 'left-1'}`}></div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-xs font-black text-[#002E5A] uppercase tracking-widest">Saisie des Postes</h4>
+                <div className="space-y-3">
+                  {efpForm.posts.map((post, idx) => (
+                    <div key={idx} className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 group">
+                      <div className={`w-3 h-3 rounded-full ${post.color}`}></div>
+                      <div className="flex-1">
+                        <p className="text-[10px] font-bold text-gray-700 uppercase tracking-tight">{post.nature}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {efpForm.annualBreakdownEnabled && (
+                          <button 
+                            onClick={() => setShowAnnualBreakdownDrawer(idx)}
+                            className="text-[9px] font-bold text-[#2d5a8e] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition uppercase tracking-widest"
+                          >
+                            <i className="fas fa-calendar-alt mr-2"></i> Ventiler
+                          </button>
+                        )}
+                        <div className="relative w-32">
+                          <input 
+                            type="number" 
+                            disabled={efpForm.annualBreakdownEnabled}
+                            className={`w-full bg-white border-none rounded-xl p-2 text-xs font-black text-[#002E5A] outline-none focus:ring-2 focus:ring-[#002E5A] pr-8 text-right ${efpForm.annualBreakdownEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            value={post.amount}
+                            onChange={(e) => {
+                              const newPosts = [...efpForm.posts];
+                              newPosts[idx].amount = Number(e.target.value);
+                              setEfpForm({...efpForm, posts: newPosts});
+                            }}
+                          />
+                          <span className="absolute right-3 top-2.5 text-[10px] font-bold text-gray-400">€</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[#002E5A] p-8 rounded-3xl text-white flex justify-between items-center shadow-2xl">
+                <div>
+                  <p className="text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-1">Total EFP Version {efpVersions.length + 1}</p>
+                  <p className="text-3xl font-black tracking-tighter">{efpForm.posts.reduce((acc: number, curr: EFPPost) => acc + curr.amount, 0).toLocaleString()} €</p>
+                </div>
+                {efpVersions.length > 0 && (
+                  <div className="text-right border-l border-white/10 pl-8">
+                    <p className="text-[9px] font-bold text-blue-300 uppercase tracking-widest mb-1">Écart vs Version {efpVersions.length}</p>
+                    <p className={`text-lg font-black ${efpForm.posts.reduce((acc: number, curr: EFPPost) => acc + curr.amount, 0) - efpVersions[efpVersions.length-1].total >= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                      {efpForm.posts.reduce((acc: number, curr: EFPPost) => acc + curr.amount, 0) - efpVersions[efpVersions.length-1].total >= 0 ? '+' : ''}
+                      {(efpForm.posts.reduce((acc: number, curr: EFPPost) => acc + curr.amount, 0) - efpVersions[efpVersions.length-1].total).toLocaleString()} €
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button onClick={() => setShowEFPModal(false)} className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Annuler</button>
+              <button onClick={() => handleSaveEFP('BROUILLON')} className="bg-white border border-gray-200 text-[#002E5A] px-8 py-3 text-[10px] font-bold rounded-xl shadow-sm transition uppercase tracking-widest hover:bg-gray-50">Enregistrer (Brouillon)</button>
+              <button onClick={() => handleSaveEFP('VALIDÉ')} className="bg-[#002E5A] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest hover:brightness-110">Valider l'EFP</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER: VENTILATION ANNUELLE POSTE */}
+      {showAnnualBreakdownDrawer !== null && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-end bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="bg-[#002E5A] p-6 text-white flex justify-between items-center">
+              <div>
+                <p className="text-[10px] font-bold text-blue-300 uppercase tracking-widest mb-1">Ventilation Annuelle</p>
+                <h3 className="text-lg font-black uppercase tracking-tight">{efpForm.posts[showAnnualBreakdownDrawer].nature}</h3>
+              </div>
+              <button onClick={() => setShowAnnualBreakdownDrawer(null)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition"><i className="fas fa-times"></i></button>
+            </div>
+            <div className="p-8 flex-1 space-y-8 overflow-y-auto custom-scrollbar">
+              <div className="space-y-4">
+                {[2024, 2025, 2026].map(year => (
+                  <div key={year} className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <span className="text-xs font-black text-[#002E5A]">{year}</span>
+                    <div className="relative w-48">
+                      <input 
+                        type="number" 
+                        className="w-full bg-white border-none rounded-xl p-3 text-xs font-black text-[#002E5A] outline-none focus:ring-2 focus:ring-[#002E5A] pr-8 text-right"
+                        value={efpForm.posts[showAnnualBreakdownDrawer].yearBreakdown?.[year] || 0}
+                        onChange={(e) => {
+                          const newPosts = [...efpForm.posts];
+                          const post = newPosts[showAnnualBreakdownDrawer];
+                          if (!post.yearBreakdown) post.yearBreakdown = {};
+                          post.yearBreakdown[year] = Number(e.target.value);
+                          // Update total amount for the post
+                          post.amount = Object.values(post.yearBreakdown || {}).reduce((acc: number, curr: number) => acc + curr, 0);
+                          setEfpForm({...efpForm, posts: newPosts});
+                        }}
+                      />
+                      <span className="absolute right-3 top-3.5 text-[10px] font-bold text-gray-400">€</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
+                <p className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-widest mb-1">Total Poste</p>
+                <p className="text-2xl font-black text-[#002E5A]">{efpForm.posts[showAnnualBreakdownDrawer].amount.toLocaleString()} €</p>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100">
+              <button 
+                onClick={() => setShowAnnualBreakdownDrawer(null)}
+                className="w-full py-4 bg-[#002E5A] text-white text-[10px] font-black rounded-2xl shadow-xl uppercase tracking-widest hover:brightness-110 transition"
+              >
+                Terminer la ventilation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

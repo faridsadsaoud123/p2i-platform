@@ -1,38 +1,111 @@
-
 import React, { useState } from 'react';
-import { MOCK_REQUESTS } from '../mockData';
+import { useNavigate } from 'react-router-dom';
+import { useData } from './DataContext';
 import { STATUS_COLORS, PRIORITY_COLORS } from '../constants';
-import { RequestItem } from '../types';
+import { RequestItem, RequestStatus, Priority } from '../types';
+import ConfirmationModal from './ConfirmationModal';
+import { useNotification } from './NotificationSystem';
 
 const RequestManagement: React.FC = () => {
-  const [requests, setRequests] = useState<RequestItem[]>(MOCK_REQUESTS);
+  const { requests, setRequests, transformRequestToOperation } = useData();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(null);
   const [arbitrationAction, setArbitrationAction] = useState<'VALIDATE' | 'REJECT' | 'CLARIFY' | null>(null);
   const [arbitrationComment, setArbitrationComment] = useState('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { showNotification } = useNotification();
+
+  const [formData, setFormData] = useState<Partial<RequestItem>>({
+    title: '',
+    description: '',
+    site: 'Campus Centre',
+    priority: 'P3',
+    estimatedCost: 0,
+    type: 'TRAVAUX'
+  });
 
   const filteredRequests = requests.filter(r => 
     r.title.toLowerCase().includes(filter.toLowerCase()) || 
     r.site.toLowerCase().includes(filter.toLowerCase())
   );
 
+  const handleSaveRequest = (status: RequestStatus) => {
+    if (!formData.title || !formData.description || !formData.site || !formData.priority || !formData.type) {
+      showNotification('Veuillez compléter tous les champs obligatoires.', 'error');
+      return;
+    }
+
+    if (isEditing && selectedRequest) {
+      setRequests(prev => prev.map(r => r.id === selectedRequest.id ? { ...r, ...formData, status } : r));
+      showNotification(status === 'BROUILLON' ? 'La demande a été mise à jour avec succès.' : 'La demande a été soumise à validation.');
+    } else {
+      const newReq: RequestItem = {
+        id: `REQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        title: formData.title!,
+        description: formData.description!,
+        site: formData.site!,
+        building: '',
+        type: formData.type!,
+        estimatedCost: formData.estimatedCost || 0,
+        priority: formData.priority!,
+        status: status,
+        createdAt: new Date().toISOString().split('T')[0],
+        creatorId: 'u3'
+      };
+      setRequests(prev => [newReq, ...prev]);
+      showNotification(status === 'BROUILLON' ? 'La demande a été enregistrée en brouillon.' : 'La demande a été soumise pour validation.');
+    }
+
+    setShowCreateModal(false);
+    setIsEditing(false);
+    setFormData({ title: '', description: '', site: 'Campus Centre', priority: 'P3', estimatedCost: 0, type: 'TRAVAUX' });
+  };
+
+  const handleDeleteRequest = () => {
+    if (!deleteId) return;
+    const req = requests.find(r => r.id === deleteId);
+    if (req && req.status !== 'BROUILLON') {
+      showNotification('Cette demande ne peut pas être supprimée car elle est déjà validée ou liée à une opération.', 'error');
+      setDeleteId(null);
+      return;
+    }
+    setRequests(prev => prev.filter(r => r.id !== deleteId));
+    showNotification('La demande a été supprimée avec succès.');
+    setDeleteId(null);
+  };
+
   const handleArbitration = () => {
     if (!selectedRequest || !arbitrationAction) return;
     if ((arbitrationAction === 'REJECT' || arbitrationAction === 'CLARIFY') && !arbitrationComment) {
-      alert("Un motif/commentaire est obligatoire.");
+      showNotification(arbitrationAction === 'REJECT' ? "Le motif de rejet est obligatoire." : "Veuillez préciser les informations attendues.", 'error');
       return;
+    }
+
+    if (arbitrationAction === 'VALIDATE') {
+      const opId = transformRequestToOperation(selectedRequest.id, arbitrationComment);
+      if (opId) {
+        showNotification('Demande validée et transformée en opération ! Redirection...', 'success');
+        setSelectedRequest(null);
+        setArbitrationAction(null);
+        setArbitrationComment('');
+        setTimeout(() => {
+          navigate('/operations', { state: { selectedOpId: opId } });
+        }, 1000);
+        return;
+      }
     }
 
     const updated = requests.map(r => {
       if (r.id === selectedRequest.id) {
         let newStatus = r.status;
-        if (arbitrationAction === 'VALIDATE') newStatus = 'VALIDE';
         if (arbitrationAction === 'REJECT') newStatus = 'REJETE';
         if (arbitrationAction === 'CLARIFY') newStatus = 'PRECISION';
 
-        return { 
-          ...r, 
+        return {
+          ...r,
           status: newStatus,
           rejectionReason: arbitrationAction === 'REJECT' ? arbitrationComment : r.rejectionReason,
           clarificationRequest: arbitrationAction === 'CLARIFY' ? arbitrationComment : r.clarificationRequest
@@ -42,9 +115,22 @@ const RequestManagement: React.FC = () => {
     });
 
     setRequests(updated);
+    showNotification(
+      arbitrationAction === 'VALIDATE' ? 'La demande a été validée avec succès.' : 
+      arbitrationAction === 'REJECT' ? 'La demande a été rejetée.' : 
+      'La demande est désormais en attente de précisions.'
+    );
     setSelectedRequest(null);
     setArbitrationAction(null);
     setArbitrationComment('');
+  };
+
+  const openEditModal = (req: RequestItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedRequest(req);
+    setFormData(req);
+    setIsEditing(true);
+    setShowCreateModal(true);
   };
 
   return (
@@ -129,8 +215,29 @@ const RequestManagement: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
-                    <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                      <button className="w-8 h-8 flex items-center justify-center text-[#002E5A] bg-blue-50 rounded-lg hover:bg-blue-100 transition shadow-sm"><i className="fas fa-eye text-xs"></i></button>
+                    <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedRequest(req); }}
+                        className="w-8 h-8 flex items-center justify-center text-[#002E5A] bg-blue-50 rounded-lg hover:bg-blue-100 transition shadow-sm"
+                      >
+                        <i className="fas fa-eye text-xs"></i>
+                      </button>
+                      {(req.status === 'BROUILLON' || req.status === 'PRECISION') && (
+                        <button 
+                          onClick={(e) => openEditModal(req, e)}
+                          className="w-8 h-8 flex items-center justify-center text-[#fe740e] bg-orange-50 rounded-lg hover:bg-orange-100 transition shadow-sm"
+                        >
+                          <i className="fas fa-pencil-alt text-xs"></i>
+                        </button>
+                      )}
+                      {req.status === 'BROUILLON' && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(req.id); }}
+                          className="w-8 h-8 flex items-center justify-center text-[#ff3131] bg-red-50 rounded-lg hover:bg-red-100 transition shadow-sm"
+                        >
+                          <i className="fas fa-trash-alt text-xs"></i>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -145,13 +252,20 @@ const RequestManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#002E5A]/60 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
               <div className="bg-[#002E5A] p-6 flex justify-between items-center text-white">
-                 <h3 className="text-lg font-bold uppercase tracking-widest">Nouvelle Demande P2I</h3>
-                 <button onClick={() => setShowCreateModal(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition"><i className="fas fa-times"></i></button>
+                 <h3 className="text-lg font-bold uppercase tracking-widest">{isEditing ? 'Modifier la Demande' : 'Nouvelle Demande P2I'}</h3>
+                 <button onClick={() => { setShowCreateModal(false); setIsEditing(false); }} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition"><i className="fas fa-times"></i></button>
               </div>
               <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                  <div className="col-span-2 space-y-1">
                     <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Titre du Projet <span className="text-red-500">*</span></label>
-                    <input type="text" required className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" placeholder="Ex: Travaux étanchéité Amphi..." />
+                    <input 
+                      type="text" 
+                      required 
+                      className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" 
+                      placeholder="Ex: Travaux étanchéité Amphi..." 
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                     />
                  </div>
                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Site / Campus <span className="text-red-500">*</span></label>
@@ -170,11 +284,23 @@ const RequestManagement: React.FC = () => {
                  </div>
                  <div className="col-span-2 space-y-1">
                     <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Description détaillée <span className="text-red-500">*</span></label>
-                    <textarea required className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A] h-24" placeholder="Description du besoin..."></textarea>
+                    <textarea 
+                      required 
+                      className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A] h-24" 
+                      placeholder="Description du besoin..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                     ></textarea>
                  </div>
                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Estimation (€)</label>
-                    <input type="number" className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" placeholder="Montant HT indicatif..." />
+                    <input 
+                      type="number" 
+                      className="w-full bg-[#f1f3f8] border-none rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#002E5A]" 
+                      placeholder="Montant HT indicatif..." 
+                      value={formData.estimatedCost}
+                      onChange={(e) => setFormData({...formData, estimatedCost: Number(e.target.value)})}
+                     />
                  </div>
                  <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#2d5a8e] uppercase tracking-wider">Type de besoin <span className="text-red-500">*</span></label>
@@ -184,16 +310,16 @@ const RequestManagement: React.FC = () => {
                  </div>
               </div>
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                 <button onClick={() => setShowCreateModal(false)} className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase">Annuler</button>
-                 <button className="bg-[#fe740e] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest">Enregistrer Brouillon</button>
-                 <button className="bg-[#002E5A] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest">Soumettre Validation</button>
+                 <button onClick={() => { setShowCreateModal(false); setIsEditing(false); }} className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase">Annuler</button>
+                 <button onClick={() => handleSaveRequest('BROUILLON')} className="bg-[#fe740e] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest">Enregistrer Brouillon</button>
+                 <button onClick={() => handleSaveRequest('EN_ATTENTE')} className="bg-[#002E5A] text-white px-8 py-3 text-[10px] font-bold rounded-xl shadow-lg transition uppercase tracking-widest">Soumettre Validation</button>
               </div>
            </div>
         </div>
       )}
 
       {/* Detail & Arbitration Modal */}
-      {selectedRequest && (
+      {selectedRequest && !isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#002E5A]/60 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 duration-300 flex flex-col max-h-[90vh]">
               <div className="bg-[#002E5A] p-6 text-white flex justify-between items-start">
@@ -292,7 +418,18 @@ const RequestManagement: React.FC = () => {
                     )}
 
                     {selectedRequest.status === 'VALIDE' && !selectedRequest.operationId && (
-                       <button className="w-full bg-[#fe740e] text-white font-black text-[10px] py-5 rounded-2xl uppercase tracking-widest shadow-xl hover:brightness-110 transition animate-bounce">
+                       <button
+                        onClick={() => {
+                          const opId = transformRequestToOperation(selectedRequest.id);
+                          if (opId) {
+                            showNotification('Demande transformée en opération ! Redirection...', 'success');
+                            setTimeout(() => {
+                              navigate('/operations', { state: { selectedOpId: opId } });
+                            }, 1500);
+                          }
+                        }}
+                        className="w-full bg-[#fe740e] text-white font-black text-[10px] py-5 rounded-2xl uppercase tracking-widest shadow-xl hover:brightness-110 transition animate-bounce"
+                       >
                           Transformer en Opération <i className="fas fa-magic ml-2"></i>
                        </button>
                     )}
@@ -309,6 +446,14 @@ const RequestManagement: React.FC = () => {
            </div>
         </div>
       )}
+      <ConfirmationModal 
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteRequest}
+        title="Confirmer la suppression"
+        message="Êtes-vous sûr de vouloir supprimer cette demande ? Cette action est irréversible."
+        variant="danger"
+      />
     </div>
   );
 };

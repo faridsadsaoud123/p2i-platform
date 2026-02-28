@@ -1,18 +1,18 @@
-
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { MOCK_OPERATIONS, MOCK_REQUESTS } from '../mockData';
+import { useData } from './DataContext';
 
 const Dashboard: React.FC = () => {
-  const totalAE = MOCK_OPERATIONS.reduce((sum, op) => sum + op.aeOpen, 0);
-  const totalCP = MOCK_OPERATIONS.reduce((sum, op) => sum + op.cpPaid, 0);
-  const pendingRequests = MOCK_REQUESTS.filter(r => r.status === 'EN_ATTENTE').length;
+  const { operations, requests } = useData();
+  const totalAE = operations.reduce((sum, op) => sum + op.aeOpen, 0);
+  const totalCP = operations.reduce((sum, op) => sum + op.cpPaid, 0);
+  const pendingRequests = requests.filter(r => r.status === 'EN_ATTENTE').length;
 
   const budgetData = [
     { name: 'AE Ouvertes', val: totalAE },
-    { name: 'AE Engagées', val: MOCK_OPERATIONS.reduce((sum, op) => sum + op.aeEngaged, 0) },
+    { name: 'AE Engagées', val: operations.reduce((sum, op) => sum + op.aeEngaged, 0) },
     { name: 'CP Mandatés', val: totalCP },
-    { name: 'CP Prévis.', val: MOCK_OPERATIONS.reduce((sum, op) => sum + op.cpForecast, 0) },
+    { name: 'CP Prévis.', val: operations.reduce((sum, op) => sum + op.cpForecast, 0) },
   ];
 
   const statusData = [
