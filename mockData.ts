@@ -70,7 +70,10 @@ export const MOCK_REQUESTS: RequestItem[] = [
 ];
 
 export const MOCK_OPERATIONS: Operation[] = [
-  { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', nacresCodes: ['NAC-01'], eotpCodes: ['EOTP-2024-A1'], aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, estimationInitial: 150000, startDate: '2024-03-01', endDate: '2024-12-31' }
+  { id: 'OP-24-001', requestId: 'REQ-2024-001', title: 'Rénovation Toiture Amphi A', description: 'Réfection complète étanchéité.', site: 'Campus Centre', status: 'EN_EXECUTION', managerId: 'u3', priority: 'P1', pfiCode: 'PFI-2024-TRAV-01', nacresCodes: ['NAC-01'], eotpCodes: ['EOTP-2024-A1'], aeOpen: 150000, aeEngaged: 142000, cpForecast: 150000, cpPaid: 25000, estimationInitial: 150000, startDate: '2024-03-01', endDate: '2024-12-31' },
+  { id: 'OP-24-002', requestId: 'REQ-2024-002', title: 'Mise aux normes ascenseurs', description: 'Sécurité réglementaire - Ascenseurs Campus Nord.', site: 'Campus Nord', status: 'EN_CADRAGE', managerId: 'u3', priority: 'P2', pfiCode: 'PFI-2024-TRAV-02', nacresCodes: ['NAC-02'], eotpCodes: ['EOTP-2024-B1'], aeOpen: 45000, aeEngaged: 0, cpForecast: 45000, cpPaid: 0, estimationInitial: 45000, startDate: '2024-06-01', endDate: '2024-09-30' },
+  { id: 'OP-24-003', title: 'Rénovation Hall Accueil Bâtiment A', description: 'Rafraîchissement esthétique et peinture.', site: 'Campus Centre', status: 'CREEE', managerId: 'u3', priority: 'P4', pfiCode: 'PFI-2024-MAIN-01', nacresCodes: [], eotpCodes: ['EOTP-2024-C1'], aeOpen: 15000, aeEngaged: 0, cpForecast: 15000, cpPaid: 0, estimationInitial: 15000, startDate: '2024-05-15', endDate: '2024-07-31' },
+  { id: 'OP-24-004', title: 'Installation contrôle d\'accès Labo Bio', description: 'Nouveau système badge pour sécurité labo.', site: 'Pôle Cathédrale', status: 'AFFECTEE', managerId: 'u3', priority: 'P3', pfiCode: 'PFI-2024-SEC-01', nacresCodes: [], eotpCodes: ['EOTP-2024-D1'], aeOpen: 22000, aeEngaged: 8000, cpForecast: 22000, cpPaid: 5000, estimationInitial: 20000, startDate: '2024-07-01', endDate: '2024-10-31' }
 ];
 
 export const MOCK_COFINANCEURS: Cofinanceur[] = [

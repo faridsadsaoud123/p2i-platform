@@ -12,7 +12,7 @@ interface DataContextType {
   updateOperation: (id: string, updates: Partial<Operation>) => void;
 }
 
-const DataContext = createContext<DataContextType | undefined>(undefined);
+export const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [requests, setRequests] = useState<RequestItem[]>(MOCK_REQUESTS);
